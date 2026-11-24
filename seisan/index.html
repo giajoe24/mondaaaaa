@@ -182,7 +182,6 @@ const Q=[
 ["工程能力","Cpk の求め方（簡単な方）は？","上限側・下限側を（標準偏差×3）で割り、小さい方","上限側・下限側を（標準偏差×6）で割り、大きい方","上限側・下限側を（標準偏差×3）で割り、大きい方","上限側・下限側を（標準偏差×3）で割り、平均する","悪い方の数字を採用"],
 ["工程能力","上限12・下限4・平均10.4・標準偏差0.99 のとき Cpk は？","約0.54","約1.35","約2.15","約0.27","(12−10.4)÷(3×0.99)＝0.54。1.35はCp、2.15は下限側"],
 ["工程能力","上限12・下限4・標準偏差0.99 のとき Cp は？","約1.35","約0.54","約2.69","約0.67","8÷(6×0.99)＝1.35"],
-["工程能力","Cpk を k で求めるときの式は？","Cpk ＝（1 − k）× Cp","Cpk ＝ k × Cp","Cpk ＝（1 + k）× Cp","Cpk ＝ Cp ÷ k","k ＝（規格の中心と平均のずれ）÷（規格の幅の半分）"],
 ["工程能力","上限しかない片側規格の Cp の求め方は？","（上限 − 平均）÷（標準偏差 × 3）","（上限 − 平均）÷（標準偏差 × 6）","上限 ÷（標準偏差 × 6）","（上限 − 下限）÷（標準偏差 × 6）","片側なので標準偏差の3倍で割る。式はCpkと同じだが意味が違う"],
 ["工程能力","下限しかない片側規格の例は？","溶接の強度","シャフトの振れ","寸法の公差","不良率","強い方には規格がない。振れは上限のみ"],
 ["工程能力","Cp は十分なのに Cpk が低い。まずやることは？","平均を規格の中心に寄せる","規格幅を狭くする","サンプル数を減らす","ばらつきを大きくする",""],
@@ -261,44 +260,43 @@ const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),R2=x=>Math.round(x*100)/100,R
 const T=x=>R4(P(R2(x)));
 const stp=(l,ans,tol,how,unit="")=>({l,ans,tol,how,unit});
 const gens=[
-()=>{let d;do{d=Array.from({length:6},()=>r(51,59))}while(d.reduce((a,b)=>a+b,0)%3);s=[...d].sort((a,b)=>a-b),n=6,sum=d.reduce((a,b)=>a+b,0),m=sum/n,sq=d.reduce((a,x)=>a+x*x,0),S=sq-sum*sum/n,V=S/(n-1),sd=Math.sqrt(V),med=(s[2]+s[3])/2;
- return{t:"基本統計量 演習",q:`製造品質を把握するために、工程からサンプリングし、6個を測定したデータは次のとおりでした。\n\n${d.join("　")}\n\n基本統計量を求めなさい。`,steps:[
- stp("平均値",m,.01,`全部足して個数で割る\n${d.join("＋")} ＝ ${sum}\n${sum} ÷ 6 ＝ ${nf(R2(m))}`),
- stp("中央値",med,.01,`小さい順に並べる：${s.join(", ")}\n6個（偶数）なので真ん中2つの平均\n(${s[2]} ＋ ${s[3]}) ÷ 2 ＝ ${nf(med)}`),
- stp("最大値",s[5],.001,`一番大きい値 ＝ ${s[5]}`),
+()=>{const sets=[[-4,0,4],[-5,0,5],[-6,0,6],[-1,-1,0,1,1],[-2,-2,0,2,2],[-3,-3,0,3,3],[-4,-4,0,4,4],[-3,-1,0,0,1,3]],dv=sets[r(0,sets.length-1)],m=r(10,60),d=shuf(dv.map(x=>m+x)),s=[...d].sort((a,b)=>a-b),n=d.length,sum=d.reduce((a,b)=>a+b,0),S=dv.reduce((a,x)=>a+x*x,0),V=S/(n-1),sd=Math.sqrt(V),med=n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2;
+ return{t:"基本統計量",q:`${n}個を測定したデータは次のとおりでした。\n\n${d.join("　")}\n\n基本統計量を求めなさい。`,steps:[
+ stp("平均値",m,.01,`全部足して個数で割る\n${d.join(" ＋ ")} ＝ ${sum}\n${sum} ÷ ${n} ＝ ${m}`),
+ stp("中央値",med,.01,`小さい順に並べる：${s.join(", ")}\n${n%2?`${n}個（奇数）なので真ん中の値 → ${med}`:`${n}個（偶数）なので真ん中2つの平均\n(${s[n/2-1]} ＋ ${s[n/2]}) ÷ 2 ＝ ${med}`}`),
+ stp("最大値",s[n-1],.001,`一番大きい値 ＝ ${s[n-1]}`),
  stp("最小値",s[0],.001,`一番小さい値 ＝ ${s[0]}`),
- stp("範囲",s[5]-s[0],.001,`最大 − 最小 ＝ ${s[5]} − ${s[0]} ＝ ${s[5]-s[0]}`),
- stp("平方和",S,.02,`各データから平均を引いて2乗し、全部足す\n${d.map(x=>`(${x} − ${nf(R2(m))})² ＝ ${nf(R2((x-m)**2))}`).join("\n")}\n合計 ＝ ${nf(R2(S))}`),
- stp("不偏分散",V,.02,`平方和 ÷（個数 − 1）\n${nf(R2(S))} ÷ 5 ＝ ${nf(R2(V))}`),
- stp("標準偏差（小数第2位まで）",sd,.015,`分散のルート\n${nf(R2(V))} のルート ≒ ${f2(sd)}`)]}},
-()=>{const sg=r(2,6),mu=r(0,12),k1=r(1,sg*2-1),k2=r(k1+1,Math.min(sg*2+2,Math.floor(sg*2.4))),x1=mu+k1,x2=mu+k2,z1=R2(k1/sg),z2=R2(k2/sg),p1=T(z1),p2=T(z2);
- return{t:"正規分布 標準化 演習1",q:`正規分布 N(${mu}, ${sg*sg}) の\n網掛け部分（${x1} 〜 ${x2}）の確率を求めなさい。`,fig:{a:z1,b:z2,la:x1,lb:x2,mu},steps:[
- stp("標準偏差",sg,.001,`N(平均, 分散) なので 分散は ${sg*sg}\n標準偏差 ＝ ${sg*sg} のルート ＝ ${sg}`),
- stp(`${x1} の Z（小数第2位まで）`,z1,.006,`Z ＝（測定値 − 平均）÷ 標準偏差\n(${x1} − ${mu}) ÷ ${sg} ＝ ${f2(z1)}`),
- stp(`${x2} の Z（小数第2位まで）`,z2,.006,`(${x2} − ${mu}) ÷ ${sg} ＝ ${f2(z2)}`),
- stp(`Z＝${f2(z1)} の表の値`,p1,.0006,`正規分布表で 行 ${f2(z1).slice(0,3)}、列 0.0${f2(z1).slice(-1)} → ${f4(p1)}\n（Z より右側の確率）`),
- stp(`Z＝${f2(z2)} の表の値`,p2,.0006,`正規分布表で 行 ${f2(z2).slice(0,3)}、列 0.0${f2(z2).slice(-1)} → ${f4(p2)}`),
- stp("網掛け部分の確率（%）",(p1-p2)*100,.15,`右側どうしを引く\n${f4(p1)} − ${f4(p2)} ＝ ${f4(p1-p2)}\n答え 約 ${((p1-p2)*100).toFixed(1)}%`,"%")]}},
-()=>{const sg=r(5,8),mu=r(155,175),d=r(3,7),x1=mu-d,x2=mu+d,z=R2(d/sg),p=T(z),ans=(1-2*p)*100;
- return{t:"正規分布 標準化 演習2",q:`あるクラスの男子について身長を調査したところ、平均身長 ${mu}cm、標準偏差 ${sg} の正規分布に従うことが分かった。\nでは、身長 ${x1}cm 〜 ${x2}cm の人は全体の何%を占めるか？`,fig:{a:-z,b:z,la:x1,lb:x2,mu},steps:[
- stp(`${x1}cm の Z（小数第2位まで）`,-z,.006,`(${x1} − ${mu}) ÷ ${sg} ＝ −${f2(z)}`),
- stp(`${x2}cm の Z（小数第2位まで）`,z,.006,`(${x2} − ${mu}) ÷ ${sg} ＝ ${f2(z)}`),
- stp(`Z＝${f2(z)} の表の値`,p,.0006,`正規分布表 → ${f4(p)}\n左右対称なので、${x1}cm より小さい人も ${f4(p)}`),
- stp("答え（%）",ans,.15,`1 − 左側 − 右側\n1 − ${f4(p)} − ${f4(p)} ＝ ${f4(1-2*p)}\n答え 約 ${ans.toFixed(1)}%`,"%")]}},
-()=>{const sg=r(5,8),mu=r(155,175),d=r(4,14),x=mu+d,z=R2(d/sg),p=T(z);
- return{t:"正規分布 標準化",q:`身長が平均 ${mu}cm、標準偏差 ${sg} の正規分布に従う。\n身長 ${x}cm 以上の人は全体の何%か？`,fig:{a:z,b:3.6,la:x,lb:"",mu},steps:[
- stp(`${x}cm の Z（小数第2位まで）`,z,.006,`(${x} − ${mu}) ÷ ${sg} ＝ ${f2(z)}`),
- stp(`Z＝${f2(z)} の表の値`,p,.0006,`正規分布表 → ${f4(p)}（そのまま「右側」の確率）`),
+ stp("範囲",s[n-1]-s[0],.001,`最大 − 最小 ＝ ${s[n-1]} − ${s[0]} ＝ ${s[n-1]-s[0]}`),
+ stp("平方和",S,.01,`各データから平均（${m}）を引いて2乗し、全部足す\n${d.map(x=>`(${x} − ${m})² ＝ ${(x-m)**2}`).join("\n")}\n合計 ＝ ${S}`),
+ stp("不偏分散",V,.01,`平方和 ÷（個数 − 1）\n${S} ÷ ${n-1} ＝ ${nf(V)}`),
+ stp("標準偏差",sd,.015,`分散のルート（電卓の √ ボタン）\n${nf(V)} のルート ＝ ${nf(R2(sd))}`)]}},
+()=>{const sg=[2,4,5,10][r(0,3)],mu=r(1,10)*5,zs=[.5,1,1.5,2,.25,.75,1.25,1.75].filter(z=>Number.isInteger(z*sg)),zz=shuf(zs).slice(0,2).sort((a,b)=>a-b),z1=zz[0],z2=zz[1],x1=mu+z1*sg,x2=mu+z2*sg,p1=T(z1),p2=T(z2);
+ return{t:"正規分布 演習1の形",q:`正規分布 N(${mu}, ${sg*sg}) の\n網掛け部分（${x1} 〜 ${x2}）の確率を求めなさい。`,fig:{a:z1,b:z2,la:x1,lb:x2,mu},steps:[
+ stp("標準偏差",sg,.001,`N(平均, 分散) の2つ目は分散\n標準偏差 ＝ ${sg*sg} のルート ＝ ${sg}`),
+ stp(`${x1} の Z`,z1,.006,`Z ＝（測定値 − 平均）÷ 標準偏差\n(${x1} − ${mu}) ÷ ${sg} ＝ ${nf(z1)}`),
+ stp(`${x2} の Z`,z2,.006,`(${x2} − ${mu}) ÷ ${sg} ＝ ${nf(z2)}`),
+ stp(`Z＝${f2(z1)} の表の値`,p1,.0006,`正規分布表：行 ${f2(z1).slice(0,3)}、列 0.0${f2(z1).slice(-1)} → ${f4(p1)}`),
+ stp(`Z＝${f2(z2)} の表の値`,p2,.0006,`正規分布表：行 ${f2(z2).slice(0,3)}、列 0.0${f2(z2).slice(-1)} → ${f4(p2)}`),
+ stp("確率（%）",(p1-p2)*100,.15,`右側どうしを引く\n${f4(p1)} − ${f4(p2)} ＝ ${f4(p1-p2)}\n答え 約 ${((p1-p2)*100).toFixed(1)}%`,"%")]}},
+()=>{const sg=[4,5,10][r(0,2)],mu=r(31,35)*5,z=shuf([.5,1,1.5,.25,.75].filter(z=>Number.isInteger(z*sg)))[0],dd=z*sg,x1=mu-dd,x2=mu+dd,p=T(z),ans=(1-2*p)*100;
+ return{t:"正規分布 演習2の形",q:`ある男子の身長は、平均 ${mu}cm、標準偏差 ${sg} の正規分布に従う。\n身長 ${x1}cm 〜 ${x2}cm の人は全体の何%か？`,fig:{a:-z,b:z,la:x1,lb:x2,mu},steps:[
+ stp(`${x2}cm の Z`,z,.006,`(${x2} − ${mu}) ÷ ${sg} ＝ ${nf(z)}\n（${x1}cm は −${nf(z)}、左右対称）`),
+ stp(`Z＝${f2(z)} の表の値`,p,.0006,`正規分布表 → ${f4(p)}\n${x2}cm より上も、${x1}cm より下も ${f4(p)}`),
+ stp("答え（%）",ans,.15,`全体(1) − 上 − 下\n1 − ${f4(p)} − ${f4(p)} ＝ ${f4(1-2*p)}\n答え 約 ${ans.toFixed(1)}%`,"%")]}},
+()=>{const sg=[4,5,10][r(0,2)],mu=r(31,35)*5,z=shuf([.5,1,1.5,2,.25,.75,1.25].filter(z=>Number.isInteger(z*sg)))[0],x=mu+z*sg,p=T(z);
+ return{t:"正規分布（○以上）",q:`身長が平均 ${mu}cm、標準偏差 ${sg} の正規分布に従う。\n身長 ${x}cm 以上の人は全体の何%か？`,fig:{a:z,b:3.6,la:x,lb:"",mu},steps:[
+ stp(`${x}cm の Z`,z,.006,`(${x} − ${mu}) ÷ ${sg} ＝ ${nf(z)}`),
+ stp(`Z＝${f2(z)} の表の値`,p,.0006,`正規分布表 → ${f4(p)}（表の値がそのまま「以上」の確率）`),
  stp("答え（%）",p*100,.15,`約 ${(p*100).toFixed(1)}%`,"%")]}},
-()=>{const L=r(2,8),W=r(6,10),U=L+W,c=(U+L)/2,sg=r(60,140)/100,up=Math.random()<.5,off=r(Math.ceil(W*.15*10),Math.floor(W*.35*10))/10,mu=+(up?c+off:c-off).toFixed(1),cp=W/(6*sg),cu=(U-mu)/(3*sg),cl=(mu-L)/(3*sg),k=Math.min(cu,cl);
- return{t:"Cpk の計算例",q:`規格　上限 ${U}mm　下限 ${L}mm\n平均 ＝ ${mu}mm　標準偏差 ＝ ${sg}mm\n\nCp と Cpk を求めなさい。`,steps:[
- stp("Cp（小数第2位まで）",cp,.015,`（上限 − 下限）÷（標準偏差 × 6）\n(${U} − ${L}) ÷ (6 × ${sg}) ＝ ${W} ÷ ${nf(6*sg)} ≒ ${f2(cp)}`),
- stp("上限側（上限 − 平均）÷（標準偏差×3）",cu,.015,`(${U} − ${mu}) ÷ (3 × ${sg}) ＝ ${nf(R2(U-mu))} ÷ ${nf(3*sg)} ≒ ${f2(cu)}`),
- stp("下限側（平均 − 下限）÷（標準偏差×3）",cl,.015,`(${mu} − ${L}) ÷ (3 × ${sg}) ＝ ${nf(R2(mu-L))} ÷ ${nf(3*sg)} ≒ ${f2(cl)}`),
- stp("Cpk",k,.015,`小さい（悪い）方を採用 → ${f2(k)}\n${cp>=1.33&&k<1.33?"Cp は満足しているのに Cpk が足りない＝平均がずれている。平均を規格の中心に寄せる":k>=1.33?"1.33以上なので満足":"Cp も足りない。ばらつきを小さくする必要がある"}`)]}},
-()=>{const lo=Math.random()<.5,sg=r(2,6),L=r(50,150),mu=L+r(3,7)*sg+r(0,sg-1),cp=(mu-L)/(3*sg),U=r(5,20)/100,m2=+(U*r(2,5)/10).toFixed(3),s2=+(r(5,15)/1000).toFixed(3),cp2=(U-m2)/(3*s2);
- return lo?{t:"片側規格",q:`溶接の強度は下限 ${L}N しか規格がない。\n平均 ${mu}N、標準偏差 ${sg}N のとき、Cp を求めなさい。`,steps:[stp("Cp（小数第2位まで）",cp,.015,`下限だけ →（平均 − 下限）÷（標準偏差 × 3）\n(${mu} − ${L}) ÷ (3 × ${sg}) ＝ ${mu-L} ÷ ${3*sg} ≒ ${f2(cp)}`)]}
- :{t:"片側規格",q:`シャフトの振れは上限 ${U}mm しか規格がない。\n平均 ${m2}mm、標準偏差 ${s2}mm のとき、Cp を求めなさい。`,steps:[stp("Cp（小数第2位まで）",cp2,.015,`上限だけ →（上限 − 平均）÷（標準偏差 × 3）\n(${U} − ${m2}) ÷ (3 × ${s2}) ≒ ${f2(cp2)}`)]}}
+()=>{const sg=[1,2][r(0,1)],W=[6,8,10,12][r(0,3)]*sg,L=r(1,5)*sg,U=L+W,up=Math.random()<.5,off=r(1,W/sg/2-1)*sg,mu=(U+L)/2+(up?off:-off),cp=W/(6*sg),cu=(U-mu)/(3*sg),cl=(mu-L)/(3*sg),k=Math.min(cu,cl);
+ return{t:"Cp・Cpk",q:`規格　上限 ${U}mm　下限 ${L}mm\n平均 ＝ ${mu}mm　標準偏差 ＝ ${sg}mm\n\nCp と Cpk を求めなさい。`,steps:[
+ stp("Cp",cp,.015,`（上限 − 下限）÷（標準偏差 × 6）\n(${U} − ${L}) ÷ (6 × ${sg}) ＝ ${W} ÷ ${6*sg} ≒ ${f2(cp)}`),
+ stp("上限側",cu,.015,`（上限 − 平均）÷（標準偏差 × 3）\n(${U} − ${mu}) ÷ (3 × ${sg}) ＝ ${U-mu} ÷ ${3*sg} ≒ ${f2(cu)}`),
+ stp("下限側",cl,.015,`（平均 − 下限）÷（標準偏差 × 3）\n(${mu} − ${L}) ÷ (3 × ${sg}) ＝ ${mu-L} ÷ ${3*sg} ≒ ${f2(cl)}`),
+ stp("Cpk",k,.015,`上限側と下限側の小さい方 → ${f2(k)}\n${k>=1.33?"1.33以上なので満足":cp>=1.33?"Cp は足りているのに Cpk が足りない＝平均がずれている":"1.33未満なので不足"}`)]}},
+()=>{const lo=Math.random()<.5,sg=r(1,5),L=r(5,15)*10,dd=sg*[3,4,5,6][r(0,3)],mu=lo?L+dd:L,U=L+dd,cp=dd/(3*sg);
+ return lo?{t:"片側規格",q:`溶接の強度は下限 ${L}N しか規格がない。\n平均 ${mu}N、標準偏差 ${sg}N のとき、Cp を求めなさい。`,steps:[stp("Cp",cp,.015,`下限だけ →（平均 − 下限）÷（標準偏差 × 3）\n(${mu} − ${L}) ÷ (3 × ${sg}) ＝ ${dd} ÷ ${3*sg} ≒ ${f2(cp)}`)]}
+ :{t:"片側規格",q:`振れは上限 ${U} しか規格がない。\n平均 ${L}、標準偏差 ${sg} のとき、Cp を求めなさい。`,steps:[stp("Cp",cp,.015,`上限だけ →（上限 − 平均）÷（標準偏差 × 3）\n(${U} − ${L}) ÷ (3 × ${sg}) ＝ ${dd} ÷ ${3*sg} ≒ ${f2(cp)}`)]}}
 ];
 const gname=["基本統計量","正規分布（区間）","正規分布（身長）","正規分布（以上）","Cp・Cpk","片側規格"];
 let cgen=-1;
@@ -309,7 +307,7 @@ function curve(f){const W=320,H=120,X=z=>W/2+z*(W/7),Y=z=>H-22-Math.exp(-z*z/2)*
 function ztable(){let h='<details style="margin-top:12px"><summary style="min-height:44px;padding:10px 0;cursor:pointer;font-weight:700">正規分布表を見る（Zより右側の確率）</summary><div class="scroll"><table style="border-collapse:collapse;font:13px \'Space Grotesk\',sans-serif"><tr><th style="padding:4px 6px">Z</th>'+[...Array(10)].map((_,j)=>`<th style="padding:4px 6px">0.0${j}</th>`).join("")+"</tr>";
  for(let i=0;i<30;i++){h+=`<tr><th style="padding:4px 6px;text-align:right">${(i/10).toFixed(1)}</th>`+[...Array(10)].map((_,j)=>`<td style="padding:4px 6px;text-align:right;border-top:1px solid var(--line)">${f4(P(i/10+j/100))}</td>`).join("")+"</tr>"}return h+"</table></div></details>"}
 const num=v=>{v=String(v).replace(/[０-９．－]/g,c=>c==="．"?".":c==="－"?"-":String.fromCharCode(c.charCodeAt(0)-65248)).replace(/[−ー]/g,"-").replace(/[%％\s]/g,"");return v===""||isNaN(+v)?null:+v};
-const sfmt=s=>s.tol<=.001&&Number.isInteger(s.ans)?String(s.ans):s.tol<=.0006?f4(s.ans):s.tol>=.1?s.ans.toFixed(1):f2(s.ans);
+const sfmt=s=>s.tol<=.001&&Number.isInteger(s.ans)?String(s.ans):s.tol<=.0006?f4(s.ans):s.tol>=.1?s.ans.toFixed(1):nf(R2(s.ans));
 function newCalc(){const g=cgen<0?r(0,gens.length-1):cgen;cq=gens[g]();cq.i=0;cq.res=[];cq.shown=false}
 function drawCalc(){if(!cq)newCalc();
  let h=`<div class="bar"><select id="cgen"><option value="-1">全部ランダム</option>${gname.map((n,i)=>`<option value="${i}"${i===cgen?" selected":""}>${n}</option>`).join("")}</select></div>`;
@@ -319,7 +317,7 @@ function drawCalc(){if(!cq)newCalc();
   return `<div class="step todo">${i+1}. ${esc(s.l)}</div>`}).join("")+`</div>`;
  if(cq.shown){h+=cq.i<cq.steps.length-1?`<div class="btns" style="grid-template-columns:1fr"><button class="btn co" id="snext">次の手順へ</button></div>`:`<div class="exp" style="text-align:center;font-weight:700">${cq.res.filter(Boolean).length} / ${cq.steps.length} 正解</div><div class="btns" style="grid-template-columns:1fr"><button class="btn co" id="cnext">次の問題</button></div>`}
  if(cq.fig)h+=ztable();
- h+=`<p class="small">小数は四捨五入で答えてOK（少しの誤差は正解にします）。%は「20.3」のように数字だけでもOK。</p>`;
+ h+=`<p class="small">普通の電卓で解ける数字にしてあります。小数は四捨五入でOK。%は「20.3」のように数字だけでもOK。</p>`;
  app.innerHTML=h;const inp=document.getElementById("ans");if(inp)inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();check(false)}})}
 function check(giveup){const s=cq.steps[cq.i];if(!giveup){const v=num(document.getElementById("ans").value);if(v===null){const el=document.getElementById("ans");el.placeholder="数字を入れてね";el.focus();return}cq.res[cq.i]=Math.abs(v-s.ans)<=s.tol+1e-9}else cq.res[cq.i]=false;cq.shown=true;const y=window.scrollY;drawCalc();window.scrollTo(0,y)}
 
