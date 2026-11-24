@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>生産工学 暗記アプリ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 試験前夜の単語帳。速く、迷わず、片手で。
+   IDEA: 工程の検査票（データシート）— 合格/不合格を付けていく
+   PICTURE: 画面いっぱいの大きなカード自体
+   COLOUR and TYPE: コバルト帯・白・黒、正解グリーン/不正解レッドのみ。Noto Sans JP + Space Grotesk の数字
+   LAYOUT: 上に細いタブ帯、中央に1枚のカード、下に親指で押す大きなボタン */
+:root{color-scheme:light dark;--bg:light-dark(#f4f6fd,#0a0d18);--card:light-dark(#fff,#141a2e);--ink:light-dark(#0b1020,#e8ecff);--mut:light-dark(#5a6380,#9aa3c4);--co:#1240e0;--co2:light-dark(#eef2ff,#1b2550);--ok:#0f9d58;--ng:#d93025;--line:light-dark(#d8def0,#2a3358)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans JP",system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+header{background:var(--co);color:#fff;padding:12px max(4vw,14px) 0;position:sticky;top:0;z-index:5}
+h1{margin:0 0 8px;font-size:18px;font-weight:900;letter-spacing:.02em}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav button{flex:1 0 auto;background:none;border:0;color:#c9d4ff;font:700 15px "Noto Sans JP";padding:10px 12px 12px;border-bottom:3px solid transparent;min-height:44px;cursor:pointer}
+nav button.on{color:#fff;border-bottom-color:#fff}
+main{max-width:720px;margin:0 auto;padding:16px max(4vw,14px) 40px}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bar select,.bar button{font:15px "Noto Sans JP";min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 12px}
+.prog{flex:1 1 120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.prog i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.num{font:700 14px "Space Grotesk",sans-serif;color:var(--mut);white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;min-height:46vh;padding:22px 20px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;box-shadow:0 6px 24px rgba(18,64,224,.08);position:relative}
+.tag{position:absolute;top:12px;left:16px;font-size:12px;font-weight:700;color:var(--co);background:var(--co2);padding:2px 10px;border-radius:20px}
+:root[data-theme=dark] .tag{color:#aab9ff}
+.q{font-size:clamp(19px,5vw,24px);font-weight:700;line-height:1.5;text-wrap:balance}
+.a{margin-top:18px;padding-top:16px;border-top:2px dashed var(--line);font-size:clamp(18px,4.6vw,22px);font-weight:700;color:var(--co);white-space:pre-line}
+:root[data-theme=dark] .a{color:#8fa6ff}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .a{color:#8fa6ff}:root:not([data-theme=light]) .tag{color:#aab9ff}}
+.hint{margin-top:auto;padding-top:18px;font-size:13px;color:var(--mut);text-align:center}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{min-height:56px;border:0;border-radius:14px;font:900 17px "Noto Sans JP";color:#fff;cursor:pointer}
+.btn.ng{background:var(--ng)}.btn.ok{background:var(--ok)}.btn.co{background:var(--co)}.btn.gh{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn:focus-visible,nav button:focus-visible,.opt:focus-visible{outline:3px solid #ffb300;outline-offset:2px}
+.opts{display:grid;gap:10px;margin-top:14px}
+.opt{text-align:left;min-height:56px;padding:12px 16px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 16px/1.45 "Noto Sans JP";cursor:pointer;white-space:pre-line}
+.opt.r{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--card))}.opt.w{border-color:var(--ng);background:color-mix(in srgb,var(--ng) 14%,var(--card))}
+.exp{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--co2);font-size:15px;white-space:pre-line}
+.done{text-align:center;padding:30px 10px}.done b{font:700 56px "Space Grotesk";color:var(--co);display:block}
+.sheet section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.sheet h2{font-size:17px;margin:0 0 8px;color:var(--co)}
+:root[data-theme=dark] .sheet h2{color:#8fa6ff}
+.sheet .f{font:700 17px "Noto Sans JP";padding:6px 10px;background:var(--co2);border-radius:8px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+.sheet p{margin:4px 0;font-size:15px}
+.small{font-size:13px;color:var(--mut)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>生産工学 期末 暗記アプリ</h1>
+<nav id="tabs"><button data-t="card" class="on">暗記カード</button><button data-t="quiz">4択テスト</button><button data-t="calc">計算練習</button><button data-t="sheet">公式まとめ</button></nav></header>
+<main id="app"></main>
+<script>
+{
+const C=[
+["会社","会社と利害関係のある人・組織（株主・従業員・経営者・仕入先など）をまとめて何という？","ステークホルダー（利害関係者）"],
+["会社","会社の各組織がやるべき仕事を決めたものを何という？","業務区分（業務分掌）"],
+["会社","市場を調査し、お客様が欲しいものを開発するやり方は？","マーケットイン"],
+["会社","世の中にない新しい価値を提案するやり方は？（例：スマホが初めて出た時）","プロダクトアウト"],
+["データ","数えられる整数のデータ（不良数・人数・停止回数など）を何という？","計数値"],
+["データ","測って得られる連続した値（長さ・重さ・時間・温度など）を何という？","計量値"],
+["データ","人口密度は計数値？計量値？","計量値（面積で割って計算で求めるから）"],
+["データ","データは大きく分けると何と何？","言語データと数値データ"],
+["統計","実存するデータの特徴や性質を把握する統計は？（例：全国模試・国勢調査）","記述統計"],
+["統計","母集団からサンプリングし状態を推測する統計は？（例：TV視聴率・選挙出口調査）","推測統計"],
+["統計","母集団から取り出したものを何という？","試料（サンプル）"],
+["統計","試料を取り出す行為を何という？","サンプリング"],
+["統計","生産工程は有限母集団？無限母集団？","無限母集団"],
+["統計","中心的傾向を表すもの4つは？","平均値 x̄\nメディアン（中央値）Me\nモード（最頻値）Mo\nミッドレンジ（中点値）M"],
+["統計","ばらつきを表すもの4つは？","平方和 S\n分散 V\n標準偏差 s\n範囲 R"],
+["統計","メディアン（中央値）とは？","データを大きさ順に並べたとき真ん中の値\n偶数個なら真ん中2つの平均"],
+["統計","モード（最頻値）とは？","データの中で最も多く出てくる値"],
+["統計","ミッドレンジ（中点値）の求め方は？","（最大値＋最小値）÷ 2"],
+["統計","範囲 R の求め方は？","最大値 − 最小値"],
+["統計","偏差とは？","各データと平均値の差\nΔxᵢ ＝ xᵢ − x̄"],
+["統計","偏差をそのまま全部足すといくつになる？","0（だから2乗して足す）"],
+["統計","平方和 S の式（覚える方）は？","S ＝ Σx² − (Σx)² ÷ n"],
+["統計","不偏分散 V の式は？","V ＝ S ÷ (n − 1)"],
+["統計","不偏分散の分母 n−1 を何という？","自由度"],
+["統計","標準偏差 s の式は？","s ＝ √V"],
+["統計","母集団の平均・標準偏差・分散の記号は？","平均 μ（ミュー）\n標準偏差 σ（シグマ）\n分散 σ²"],
+["統計","サンプルの平均・標準偏差の記号は？","平均 x̄（エックスバー）\n標準偏差 s"],
+["正規分布","平均±1σに入る確率は？","68.3%"],
+["正規分布","平均±2σに入る確率は？","95.4%"],
+["正規分布","平均±3σに入る確率は？","99.7%"],
+["正規分布","標準化の式は？","Z ＝ (x − μ) ÷ σ"],
+["正規分布","標準正規分布 N(0,1) の平均と分散は？","平均 0、分散 1"],
+["正規分布","N(3,16) の 3 と 16 は何？","3 ＝ 平均\n16 ＝ 分散（標準偏差は √16 ＝ 4）"],
+["正規分布","正規分布の裾はゼロになる？","ならない。限りなくゼロに近づく"],
+["工程能力","工程能力とは？","工程がどれだけ均一に、ばらつきなく製品を生産できるかを示す指数\n＝規格幅に対するばらつきの程度"],
+["工程能力","Cp の式は？","Cp ＝ (USL − LSL) ÷ 6σ"],
+["工程能力","Cp はいくつ以上で満足？","1.33 以上"],
+["工程能力","Cp が 1.67 を超えるとどういう状態？","ばらつきが小さすぎる＝品質が良すぎてムダにお金がかかっている\n（1.33〜1.67 が最も経済的）"],
+["工程能力","Cp が 1 より小さいとは？","6σ が規格幅より大きい＝不良が出る"],
+["工程能力","Cpk の式（簡単な方）は？","Cpk ＝ (USL − μ) ÷ 3σ\nCpk ＝ (μ − LSL) ÷ 3σ\n→ 小さい（悪い）方を採用"],
+["工程能力","Cp だけではダメで Cpk を使う理由は？","Cp は平均の位置を考えていない。平均が上限や下限にずれると不良が出るから"],
+["工程能力","片側規格（上限のみ）の Cp の式は？","Cp ＝ (USL − μ) ÷ 3σ"],
+["工程能力","片側規格（下限のみ）の Cp の式は？","Cp ＝ (μ − LSL) ÷ 3σ"],
+["工程能力","片側規格の例を2つ","振れ（上限のみ）\n溶接の強度（下限のみ）"],
+["工程能力","Cpk が低いときの改善方法は？","平均を規格の中心に寄せる\nばらつきを小さくする"],
+["実験計画法","実験計画法を始めた人は？","R.A.フィッシャー"],
+["実験計画法","特性値に影響するもの（温度・圧力など）を何という？","因子"],
+["実験計画法","因子を「高い・低い」と変える段階を何という？","水準"],
+["実験計画法","最も効く因子の効果を何という？","主効果"],
+["実験計画法","2つの因子が重なると単独とは違う効果が出ること（水＋太陽光で劣化）を何という？","交互作用"],
+["品質","品質とは？","製品やサービスがお客様のニーズをどれぐらい満たしているかの程度"],
+["品質","ねらいの品質の別名は？","設計品質"],
+["品質","出来栄えの品質の別名は？","製造品質"],
+["品質","鉛筆が「書ける」のような、満たさないとクレームになる品質は？","当たり前品質"],
+["品質","「より滑らかに書ける」のような、口コミで広がる品質は？","魅力的品質"],
+["品質","品質を決めるときに狙うポイントは？","最も経済的（安く提供できる）なところ"],
+["QC","QC七つ道具を全部","パレート図・特性要因図・チェックシート・ヒストグラム・散布図・グラフ（管理図）・層別"],
+["QC","QCサークルでよく使う、項目を大きい順に並べた図は？","パレート図"],
+["QC","特性と要因の関係を魚の骨の形で表す図は？","特性要因図（要因は5Mなどで網羅的に）"],
+["QC","チェックシートの3種類は？","管理用・記録用・調査用"],
+["QC","XとYの関係を点で表す図は？","散布図"],
+["QC","散布図で右肩上がりは？右肩下がりは？","右肩上がり＝正の相関\n右肩下がり＝負の相関"],
+["重点管理","重点管理区分 S は？","保安指定（Safety）：人身事故・車両火災などにつながる恐れ"],
+["重点管理","重点管理区分 E は？","排気指定（Emission）：排出ガス浄化機能などの阻害"],
+["重点管理","重点管理区分 R は？","法規制指定（Regulation）：認証マーク・S,E以外の法規制"],
+["重点管理","重点管理区分 F は？","走行指定（Fahren）：走行機能の阻害"],
+["重点管理","重点管理区分 C は？","重要指定（Critical）：S,E,R,F 以外で重点管理が必要"]
+];
+// 4択：[分類, 問題, 正解, 誤答1, 誤答2, 誤答3, 解説]  — 誤答は「ひっかけ」になるものを手作り
+const Q=[
+["会社","株主・従業員・仕入先など、会社と利害関係のある人や組織をまとめて何という？","ステークホルダー","サプライヤー","シェアホルダー","カスタマー","ステークホルダー＝利害関係者。サプライヤーは仕入先、シェアホルダーは株主だけを指す"],
+["会社","市場調査でお客様が欲しいものを調べて開発するやり方は？","マーケットイン","プロダクトアウト","マーケティング","ベンチマーキング","世の中にない新しい価値を提案するのがプロダクトアウト"],
+["会社","スマホが初めて世に出たときのような、新しい価値を提案する開発は？","プロダクトアウト","マーケットイン","プロセスイン","カスタマーイン","市場の声から作る＝マーケットイン、新提案＝プロダクトアウト"],
+["会社","会社の各組織が「自分たちは何をやるべきか」を決めたものは？","業務区分","職務経歴","組織図","就業規則","業務区分（業務分掌）。覚えておくように言われた言葉"],
+["データ","次のうち計数値はどれ？","設備の停止回数","部品の重さ","加工時間","人口密度","計数値＝数えるもの。重さ・時間は測るもの、人口密度は割り算で求めるので計量値"],
+["データ","次のうち計量値はどれ？","人口密度","不良品の数","生産個数","欠点数","人口密度は人数÷面積で計算するので計量値（スライドでは不良率も計量値の例）"],
+["データ","長さ・重さ・温度など、測って得られる連続した値は？","計量値","計数値","係数値","言語データ","「けいすうち」は計数値（数える）。係数値は書き間違えに注意"],
+["統計","全国模試や国勢調査のように、実在するデータの特徴をつかむ統計は？","記述統計","推測統計","実験計画法","多変量解析","手元のデータを表やグラフ・平均で表す＝記述統計"],
+["統計","TV視聴率や選挙の出口調査のような統計は？","推測統計","記述統計","全数調査","層別","一部（サンプル）から全体（母集団）を推測する＝推測統計"],
+["統計","母集団から取り出したもの（サンプル）を日本語で何という？","試料","資料","標本値","母数","「試料」を取り出す行為が「サンプリング」"],
+["統計","生産工程は何母集団？","無限母集団","有限母集団","標準母集団","正規母集団","どんどん作って出荷されるので無限。クラスの人数などは有限"],
+["統計","次のうち「ばらつき」を表すものはどれ？","範囲 R","中央値 Me","最頻値 Mo","中点値 M","Me・Mo・M・x̄ は中心的傾向。ばらつきは S・V・s・R"],
+["統計","次のうち「中心的傾向」を表すものはどれ？","ミッドレンジ M","平方和 S","分散 V","範囲 R","中心的傾向：平均・メディアン・モード・ミッドレンジ"],
+["統計","データ 3, 8, 5, 1, 4 の中央値は？","4","5","8","4.2","並べると 1,3,4,5,8 → 真ん中は4。並べずに真ん中を取ると5になるひっかけ。4.2は平均"],
+["統計","データ 50,51,52,52,56,58,58,58,59,60 の中央値は？","57","56","58","55.4","偶数個なので真ん中2つ (56+58)÷2＝57"],
+["統計","データ 50,51,52,52,56,58,58,58,59,60 の最頻値は？","58","52","57","60","58が3個で一番多い"],
+["統計","最大60、最小50 のときの中点値（ミッドレンジ）は？","55","10","110","57","(60+50)÷2＝55。10は範囲"],
+["統計","最大60、最小50 のときの範囲 R は？","10","55","5","110","R＝最大−最小。55は中点値"],
+["統計","偏差（平均からの差）をそのまま全部足すと？","0になる","平方和になる","分散になる","範囲になる","プラスとマイナスが打ち消し合って0。だから2乗して足す"],
+["統計","平方和 S の式として正しいのは？","S ＝ Σx² − (Σx)² ÷ n","S ＝ Σx² − (Σx)²","S ＝ (Σx)² − Σx² ÷ n","S ＝ Σx² ÷ n","先生が「この式を覚えて」と言った式"],
+["統計","不偏分散 V の式は？","V ＝ S ÷ (n − 1)","V ＝ S ÷ n","V ＝ √S","V ＝ S ÷ (n + 1)","工程（無限母集団）では必ず n−1。n−1 は自由度"],
+["統計","不偏分散の分母 n − 1 を何という？","自由度","標本数","信頼度","有意水準",""],
+["統計","標準偏差 s の求め方は？","s ＝ √V","s ＝ V²","s ＝ V ÷ 2","s ＝ √S","分散のルート。2乗したものを元の単位に戻す"],
+["統計","母集団の平均を表す記号は？","μ（ミュー）","x̄（エックスバー）","σ（シグマ）","s","サンプルの平均が x̄、母集団の平均が μ"],
+["統計","母集団の標準偏差を表す記号は？","σ","s","V","μ","サンプルの標準偏差は s、母集団は σ。分散は σ²"],
+["正規分布","正規分布で 平均±1σ に入る確率は？","68.3%","95.4%","99.7%","50.0%",""],
+["正規分布","正規分布で 平均±2σ に入る確率は？","95.4%","68.3%","99.7%","97.5%",""],
+["正規分布","正規分布で 平均±3σ に入る確率は？","99.7%","95.4%","99.9%","68.3%",""],
+["正規分布","標準化の式は？","Z ＝ (x − μ) ÷ σ","Z ＝ (μ − x) ÷ σ²","Z ＝ (x − μ) ÷ σ²","Z ＝ x ÷ σ − μ","分散で割らない。標準偏差σで割る"],
+["正規分布","N(3, 16) の標準偏差は？","4","16","3","8","N(平均, 分散)。2つ目の16は分散なので √16＝4"],
+["正規分布","N(3, 16) で x＝5 のときの Z は？","0.5","0.125","2","1.25","(5−3)÷4＝0.5。16で割ると0.125になるひっかけ"],
+["正規分布","N(3, 16) で 5〜8 の確率は？（Z＝0.5→0.3085、Z＝1.25→0.1056）","20.3%","41.4%","79.7%","10.6%","右側どうしを引く：0.3085−0.1056＝0.2029"],
+["正規分布","平均170cm・標準偏差7cm。165〜175cm の人は何%？（Z＝0.71→0.2389）","52.2%","23.9%","47.8%","76.1%","平均をまたぐ：1−0.2389−0.2389＝0.5222"],
+["正規分布","正規分布表の値（例：Z＝1.5→0.0668）は何を表す？","Zより右側の確率","0〜Zの確率","Zより左側の確率","±Zの間の確率","配布の正規分布表は上側確率（右の裾）"],
+["正規分布","標準正規分布 N(0,1) の平均と分散は？","平均0・分散1","平均1・分散0","平均0・分散0","平均1・分散1",""],
+["正規分布","偏差値50くらいの学校のイメージは？","全体の半分くらいが入れる","千人に2〜3人","上位16%","上位2.3%","偏差値70だと千人中2〜3人くらいのイメージ（授業の例え）"],
+["工程能力","工程能力 Cp の式は？","(USL − LSL) ÷ 6σ","(USL − LSL) ÷ 3σ","(USL − μ) ÷ 3σ","6σ ÷ (USL − LSL)","両側規格は規格幅÷6σ。3σで割るのはCpkと片側規格"],
+["工程能力","一般に工程能力が「満足」とされる Cp は？","1.33 以上","1.00 以上","1.67 以上","0.67 以上","1.33で満足。1.67超は良すぎ"],
+["工程能力","Cp が 1.67 を超えているとき、どう考える？","品質が良すぎてお金をかけすぎ","不良がたくさん出ている","ちょうど一番経済的","平均がずれている","1.33〜1.67が最も経済的"],
+["工程能力","Cp が 1 より小さいとは？","6σ が規格幅より大きく不良が出る","6σ が規格幅よりずっと小さい","平均が中心にある","品質が良すぎる",""],
+["工程能力","Cpk を使う理由は？","Cp は平均の位置を考えていないから","Cp は計算が難しいから","Cp はばらつきを考えていないから","Cpk の方が必ず大きくなるから","平均が上限・下限側にずれると、Cpが良くても不良が出る"],
+["工程能力","Cpk の求め方（簡単な方）は？","上限側・下限側を 3σ で割り、小さい方","上限側・下限側を 6σ で割り、大きい方","上限側・下限側を 3σ で割り、大きい方","上限側・下限側を 3σ で割り、平均する","悪い方の数字を採用"],
+["工程能力","上限12・下限4・μ＝10.4・σ＝0.99 のとき Cpk は？","約0.54","約1.35","約2.15","約0.27","(12−10.4)÷(3×0.99)＝0.54。1.35はCp、2.15は下限側"],
+["工程能力","上限12・下限4・σ＝0.99 のとき Cp は？","約1.35","約0.54","約2.69","約0.67","8÷(6×0.99)＝1.35"],
+["工程能力","Cpk を k で求めるときの式は？","Cpk ＝ (1 − k) Cp","Cpk ＝ k × Cp","Cpk ＝ (1 + k) Cp","Cpk ＝ Cp ÷ k","k ＝ |規格中心−μ| ÷ (規格幅÷2)"],
+["工程能力","上限しかない片側規格の Cp の式は？","(USL − μ) ÷ 3σ","(USL − μ) ÷ 6σ","USL ÷ 6σ","(USL − LSL) ÷ 6σ","片側なので 3σ。式はCpkと同じだが意味が違う"],
+["工程能力","下限しかない片側規格の例は？","溶接の強度","シャフトの振れ","寸法の公差","不良率","強い方には規格がない。振れは上限のみ"],
+["工程能力","Cp は十分なのに Cpk が低い。まずやることは？","平均を規格の中心に寄せる","規格幅を狭くする","サンプル数を減らす","ばらつきを大きくする",""],
+["実験計画法","実験計画法を始めた人物は？","R.A.フィッシャー","シューハート","デミング","パレート","管理図はシューハート、PDCAはデミング、パレート図はパレート"],
+["実験計画法","樹脂の温度や圧力など、特性値に影響を与えるものを何という？","因子","水準","特性値","主効果","寸法など結果の値が特性値"],
+["実験計画法","温度を「高い・低い」と変えて実験するときの段階を何という？","水準","因子","交互作用","主効果",""],
+["実験計画法","最も効く因子の効果を何という？","主効果","交互作用","水準","誤差",""],
+["実験計画法","水だけ・太陽光だけでは劣化しないが、両方だと劣化する。この効果は？","交互作用","主効果","相乗作用","副作用","2つの因子が重なって単独とは違う効果が出る"],
+["品質","「品質」の定義として正しいのは？","製品やサービスがお客様のニーズを満たしている程度","製品の不良率の低さ","規格に合格している製品の割合","製品の性能の高さ","お客様のニーズをどれぐらい満たしているかの程度"],
+["品質","ねらいの品質の別名は？","設計品質","製造品質","魅力的品質","要求品質","出来栄えの品質＝製造品質"],
+["品質","出来栄えの品質の別名は？","製造品質","設計品質","当たり前品質","品質要素",""],
+["品質","「鉛筆で字が書ける」のように、満たさないとクレームになる品質は？","当たり前品質","魅力的品質","設計品質","要求品質",""],
+["品質","「より滑らかに書ける」など口コミで広がる品質は？","魅力的品質","当たり前品質","製造品質","一元的品質",""],
+["品質","品質の目標はどこを狙う？","最も経済的（安く提供できる）ところ","品質が最も良くなるところ","不良がゼロになるところ","コストが最も高いところ","お金をかければ品質は上がるが商売にならない"],
+["QC","QC七つ道具に入らないものは？","系統図","パレート図","特性要因図","層別","七つ道具：パレート図・特性要因図・チェックシート・ヒストグラム・散布図・グラフ(管理図)・層別。系統図は新QC七つ道具"],
+["QC","QC七つ道具に入るものは？","ヒストグラム","親和図","連関図","マトリックス図","親和図・連関図・マトリックス図は新QC七つ道具"],
+["QC","QCサークルでよく使う、項目を大きい順に並べた棒グラフ＋累積線の図は？","パレート図","ヒストグラム","管理図","散布図",""],
+["QC","特性と要因の関係を魚の骨の形で表す図は？","特性要因図","パレート図","系統図","散布図","要因は5Mなどで網羅的に挙げる"],
+["QC","チェックシートの種類として正しい組み合わせは？","管理用・記録用・調査用","管理用・設計用・製造用","点検用・確認用・報告用","記録用・計算用・集計用",""],
+["QC","散布図で右肩下がりの関係を何という？","負の相関","正の相関","無相関","逆相関",""],
+["QC","散布図で右肩上がりの関係を何という？","正の相関","負の相関","無相関","比例分布",""],
+["重点管理","重点管理区分の S は何指定？","保安指定（Safety）","重要指定（Special）","走行指定（Speed）","法規制指定（Standard）",""],
+["重点管理","重点管理区分の E は何指定？","排気指定（Emission）","環境指定（Environment）","電気指定（Electric）","重要指定（Essential）",""],
+["重点管理","重点管理区分の F は何指定？","走行指定（Fahren）","機能指定（Function）","火災指定（Fire）","重要指定（Fatal）","Fahren はドイツ語で「走る」"],
+["重点管理","重点管理区分の R は何指定？","法規制指定（Regulation）","信頼性指定（Reliability）","リサイクル指定（Recycle）","走行指定（Run）",""],
+["重点管理","重点管理区分の C は何指定？","重要指定（Critical）","顧客指定（Customer）","認証指定（Certification）","品質指定（Check）","S,E,R,F 以外で重点管理が必要なもの"]
+];
+const cats=["すべて",...new Set(C.map(c=>c[0]))];
+let st={}; try{st=JSON.parse(localStorage.getItem("seisan")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("seisan",JSON.stringify(st))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const app=document.getElementById("app");
+let tab="card",cat="すべて",onlyNG=false,deck=[],pos=0,open=false,qz=null,cq=null,cshow=false;
+
+function pool(){let p=C.map((c,i)=>i).filter(i=>cat==="すべて"||C[i][0]===cat);if(onlyNG)p=p.filter(i=>st[i]!==1);return p}
+function catSel(){return `<select id="cat">${cats.map(c=>`<option${c===cat?" selected":""}>${c}</option>`).join("")}</select>`}
+function known(){const p=C.map((c,i)=>i).filter(i=>cat==="すべて"||C[i][0]===cat);return [p.filter(i=>st[i]===1).length,p.length]}
+
+function newDeck(){deck=shuf(pool());pos=0;open=false}
+function drawCard(){
+ const [k,n]=known();
+ let h=`<div class="bar">${catSel()}<button id="ng">${onlyNG?"まだの札だけ ✓":"まだの札だけ"}</button><div class="prog"><i style="width:${n?k/n*100:0}%"></i></div><span class="num">覚えた ${k}/${n}</span></div>`;
+ if(pos>=deck.length){h+=`<div class="card done"><b>${k}/${n}</b>${deck.length?"1周おわり！":"この範囲は全部覚えた！"}<div class="btns"><button class="btn co" id="again">もう1周</button><button class="btn gh" id="reset">記録リセット</button></div></div>`;app.innerHTML=h;return}
+ const c=C[deck[pos]];
+ h+=`<div class="card" id="flip"><span class="tag">${esc(c[0])}　${pos+1}/${deck.length}</span><div class="q">${esc(c[1])}</div>${open?`<div class="a">${esc(c[2])}</div>`:""}<div class="hint">${open?"覚えてた？":"タップで答え"}</div></div>`;
+ h+=open?`<div class="btns"><button class="btn ng" id="no">まだ ✗</button><button class="btn ok" id="yes">覚えた ○</button></div>`:`<div class="btns"><button class="btn gh" id="skip">とばす</button><button class="btn co" id="show">答えを見る</button></div>`;
+ app.innerHTML=h;
+}
+function mark(v){st[deck[pos]]=v;save();if(v!==1)deck.push(deck[pos]);pos++;open=false;render()}
+
+let qmiss={};try{qmiss=JSON.parse(localStorage.getItem("seisanQ")||"{}")}catch(e){}
+const qsave=()=>{try{localStorage.setItem("seisanQ",JSON.stringify(qmiss))}catch(e){}};
+let qOnlyMiss=false;
+function qpool(){let p=Q.map((q,i)=>i).filter(i=>cat==="すべて"||Q[i][0]===cat);if(qOnlyMiss)p=p.filter(i=>qmiss[i]);return p}
+function newQuiz(){let p=qpool();if(!p.length){qOnlyMiss=false;p=qpool()}qz={list:shuf(p).slice(0,10),i:0,ok:0,pick:null,opts:null}}
+function drawQuiz(){
+ if(!qz)newQuiz();
+ const nm=Object.keys(qmiss).length;
+ let h=`<div class="bar">${catSel()}<button id="qmiss">${qOnlyMiss?"まちがえた問題だけ ✓":"まちがえた問題だけ"}（${nm}）</button><span class="num">正解 ${qz.ok} / ${qz.i+(qz.pick!==null?1:0)}</span></div>`;
+ if(qz.i>=qz.list.length){h+=`<div class="card done"><b>${qz.ok}/${qz.list.length}</b>${qz.ok===qz.list.length?"全問正解！":"まちがえた問題は「まちがえた問題だけ」で解き直せるよ"}<div class="btns"><button class="btn co" id="qnew">次の10問</button><button class="btn gh" id="qretry">まちがえた問題だけ</button></div></div>`;app.innerHTML=h;return}
+ const i=qz.list[qz.i],q=Q[i];if(!qz.opts)qz.opts=shuf([2,3,4,5]);
+ h+=`<div class="card" style="min-height:0;cursor:default"><span class="tag">${esc(q[0])}　${qz.i+1}/${qz.list.length}</span><div class="q" style="margin-top:14px">${esc(q[1])}</div></div><div class="opts">`;
+ h+=qz.opts.map(k=>{let cl="";if(qz.pick!==null){if(k===2)cl="r";else if(k===qz.pick)cl="w"}return `<button class="opt ${cl}" data-k="${k}">${esc(q[k])}</button>`}).join("")+"</div>";
+ if(qz.pick!==null){if(q[6])h+=`<div class="exp">${esc(q[6])}</div>`;h+=`<div class="btns" style="grid-template-columns:1fr"><button class="btn co" id="qnext">${qz.pick===2?"正解！ 次へ":"次へ"}</button></div>`}
+ app.innerHTML=h;
+}
+
+// 計算練習
+const P=z=>{z=Math.abs(z);const t=1/(1+.2316419*z),d=.3989423*Math.exp(-z*z/2);return d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))))};
+const f4=x=>x.toFixed(4),r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),f2=x=>(Math.round(x*100)/100).toFixed(2);
+const gens=[
+()=>{const d=Array.from({length:5},()=>r(50,60));const s=[...d].sort((a,b)=>a-b),sum=d.reduce((a,b)=>a+b,0),m=sum/5,S=d.reduce((a,x)=>a+(x-m)**2,0);
+ return{t:"基本統計量",q:`データ：${d.join("　")}\n平均値・中央値・範囲・平方和 S・不偏分散 V・標準偏差 s を求めよ`,a:`並べる：${s.join(", ")}\n平均 ＝ ${sum} ÷ 5 ＝ ${+m.toFixed(2)}\n中央値 ＝ ${s[2]}\n範囲 R ＝ ${s[4]} − ${s[0]} ＝ ${s[4]-s[0]}\n平方和 S ＝ ${+S.toFixed(2)}\nV ＝ S ÷ (5−1) ＝ ${+(S/4).toFixed(3)}\ns ＝ √V ≒ ${f2(Math.sqrt(S/4))}`}},
+()=>{const d=Array.from({length:6},()=>r(10,30));const s=[...d].sort((a,b)=>a-b);return{t:"中央値（偶数個）",q:`データ：${d.join("　")}\n中央値を求めよ`,a:`並べる：${s.join(", ")}\n偶数個なので真ん中2つの平均\n(${s[2]} ＋ ${s[3]}) ÷ 2 ＝ ${(s[2]+s[3])/2}`}},
+()=>{const sg=r(2,8),mu=r(10,60),k=r(5,25)/10,x=Math.round(mu+k*sg);const z=Math.round((x-mu)/sg*100)/100;
+ return{t:"正規分布（片側）",q:`N(${mu}, ${sg*sg}) に従うとき、${x} 以上になる確率は何%？`,a:`σ ＝ √${sg*sg} ＝ ${sg}\nZ ＝ (${x} − ${mu}) ÷ ${sg} ＝ ${f2(z)}\n表から P ＝ ${f4(P(z))}\n答え 約 ${(P(z)*100).toFixed(1)}%`}},
+()=>{const sg=r(2,8),mu=r(10,60),a=r(1,8)/10,b=a+r(4,10)/10;const x1=+(mu+a*sg).toFixed(1),x2=+(mu+b*sg).toFixed(1);const z1=Math.round((x1-mu)/sg*100)/100,z2=Math.round((x2-mu)/sg*100)/100;
+ return{t:"正規分布（区間）",q:`平均 ${mu}、標準偏差 ${sg} の正規分布で、${x1} 〜 ${x2} に入る確率は何%？`,a:`Z₁ ＝ (${x1} − ${mu}) ÷ ${sg} ＝ ${f2(z1)} → ${f4(P(z1))}\nZ₂ ＝ (${x2} − ${mu}) ÷ ${sg} ＝ ${f2(z2)} → ${f4(P(z2))}\n${f4(P(z1))} − ${f4(P(z2))} ＝ ${f4(P(z1)-P(z2))}\n答え 約 ${((P(z1)-P(z2))*100).toFixed(1)}%\n（図を描いて「右側の面積」を引く）`}},
+()=>{const sg=r(4,8),mu=r(150,175),a=r(3,10)/10,b=r(3,10)/10;const x1=Math.round(mu-a*sg),x2=Math.round(mu+b*sg);const z1=Math.round((mu-x1)/sg*100)/100,z2=Math.round((x2-mu)/sg*100)/100;const p=1-P(z1)-P(z2);
+ return{t:"正規分布（平均をまたぐ）",q:`身長が平均 ${mu}cm、標準偏差 ${sg}cm の正規分布。${x1}〜${x2}cm の人は何%？`,a:`Z₁ ＝ (${x1} − ${mu}) ÷ ${sg} ＝ −${f2(z1)} → 左側 ${f4(P(z1))}\nZ₂ ＝ (${x2} − ${mu}) ÷ ${sg} ＝ ${f2(z2)} → 右側 ${f4(P(z2))}\n1 − ${f4(P(z1))} − ${f4(P(z2))} ＝ ${f4(p)}\n答え 約 ${(p*100).toFixed(1)}%`}},
+()=>{const L=r(10,40),W=r(6,20),U=L+W,s=+(W/6/(r(8,18)/10)).toFixed(2),cp=W/(6*s);
+ return{t:"Cp",q:`規格 上限 ${U}、下限 ${L}、σ ＝ ${s}\nCp を求め、満足か判断せよ`,a:`Cp ＝ (${U} − ${L}) ÷ (6 × ${s}) ＝ ${W} ÷ ${+(6*s).toFixed(2)} ≒ ${f2(cp)}\n→ ${cp>=1.67?"1.67以上：良すぎ（ムダにお金をかけている可能性）":cp>=1.33?"1.33以上なので満足":cp>=1?"1.33未満なので不足":"1未満：不良が出る"}`}},
+()=>{const L=r(0,20),W=r(6,12),U=L+W,s=+(r(6,14)/10).toFixed(1),up=Math.random()<.5,mu=+(up?U-r(15,40)/10:L+r(15,40)/10).toFixed(1);const cp=W/(6*s),cu=(U-mu)/(3*s),cl=(mu-L)/(3*s),k=Math.abs((U+L)/2-mu)/(W/2);
+ return{t:"Cpk",q:`規格 上限 ${U}、下限 ${L}、μ ＝ ${mu}、σ ＝ ${s}\nCp と Cpk を求めよ`,a:`Cp ＝ ${W} ÷ (6 × ${s}) ≒ ${f2(cp)}\n上限側 (${U} − ${mu}) ÷ (3 × ${s}) ≒ ${f2(cu)}\n下限側 (${mu} − ${L}) ÷ (3 × ${s}) ≒ ${f2(cl)}\n悪い方を採用 → Cpk ≒ ${f2(Math.min(cu,cl))}\n（k法：k ＝ ${f2(k)}、(1−k)Cp ≒ ${f2((1-k)*cp)}）`}},
+()=>{const lo=Math.random()<.5,s=r(2,6),L=r(50,150),mu=lo?L+r(3,6)*s:L,U=lo?0:L+r(3,6)*s,m2=lo?mu:L-0;const cp=lo?(mu-L)/(3*s):(U-L)/(3*s);
+ return lo?{t:"片側規格",q:`溶接強度は下限 ${L}N のみ。平均 ${mu}N、σ ＝ ${s}N のとき Cp は？`,a:`下限のみ → Cp ＝ (μ − LSL) ÷ 3σ\n＝ (${mu} − ${L}) ÷ (3 × ${s}) ≒ ${f2(cp)}`}:{t:"片側規格",q:`振れは上限 ${U} のみ。平均 ${L}、σ ＝ ${s} のとき Cp は？`,a:`上限のみ → Cp ＝ (USL − μ) ÷ 3σ\n＝ (${U} − ${L}) ÷ (3 × ${s}) ≒ ${f2(cp)}`}}
+];
+function drawCalc(){if(!cq){cq=gens[r(0,gens.length-1)]();cshow=false}
+ app.innerHTML=`<div class="card" style="cursor:default"><span class="tag">${esc(cq.t)}</span><div class="q" style="margin-top:14px;white-space:pre-line">${esc(cq.q)}</div>${cshow?`<div class="a" style="font-size:17px">${esc(cq.a)}</div>`:`<div class="hint">紙に計算してから答えを見よう</div>`}</div><div class="btns">${cshow?`<button class="btn co" id="cnext" style="grid-column:1/-1">次の問題</button>`:`<button class="btn gh" id="cnext">別の問題</button><button class="btn co" id="cshow">答えを見る</button>`}</div><p class="small">数字は毎回ランダムに変わります。確率は正規分布表と同じ値（Zは小数第2位）。</p>`}
+
+function drawSheet(){app.innerHTML=`<div class="sheet">
+<section><h2>中心的傾向</h2><div class="f">平均 x̄ ＝ Σx ÷ n</div><p>中央値：並べて真ん中（偶数個は真ん中2つの平均）</p><p>最頻値：一番多く出る値</p><div class="f">中点値 ＝ (最大 ＋ 最小) ÷ 2</div></section>
+<section><h2>ばらつき</h2><div class="f">範囲 R ＝ 最大 − 最小</div><div class="f">平方和 S ＝ Σx² − (Σx)² ÷ n</div><div class="f">不偏分散 V ＝ S ÷ (n − 1)　← 自由度</div><div class="f">標準偏差 s ＝ √V</div><p>記号：母集団は μ・σ・σ²、サンプルは x̄・s・V</p></section>
+<section><h2>正規分布</h2><div class="f">±1σ 68.3%　±2σ 95.4%　±3σ 99.7%</div><div class="f">Z ＝ (x − μ) ÷ σ</div><p>N(μ, σ²) の2つ目は<b>分散</b>。標準偏差はそのルート。</p><p>表は「Zより右側の確率」。区間は 右側 − 右側 で引く。平均をまたぐときは 1 − 左 − 右。</p></section>
+<section><h2>工程能力</h2><div class="f">Cp ＝ (USL − LSL) ÷ 6σ</div><div class="f">Cpk ＝ (USL − μ) ÷ 3σ と (μ − LSL) ÷ 3σ の小さい方</div><div class="f">片側：Cp ＝ (USL − μ) ÷ 3σ　または (μ − LSL) ÷ 3σ</div><p>1.33以上で満足、1.67超は良すぎ（1.33〜1.67が経済的）、1未満は不良が出る。</p><p>Cpk改善：平均を中心へ寄せる／ばらつきを減らす</p></section>
+<section><h2>言葉</h2><p>マーケットイン ⇔ プロダクトアウト</p><p>計数値（数える）／計量値（測る）</p><p>因子・水準・主効果・交互作用（フィッシャー）</p><p>ねらいの品質＝設計品質／出来栄えの品質＝製造品質</p><p>当たり前品質／魅力的品質</p><p>七つ道具：パレート図・特性要因図・チェックシート・ヒストグラム・散布図・グラフ（管理図）・層別</p><p>重点管理：S保安・E排気・R法規制・F走行・C重要</p></section></div>`}
+
+function render(){({card:drawCard,quiz:drawQuiz,calc:drawCalc,sheet:drawSheet})[tab]();window.scrollTo(0,0)}
+document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;tab=b.dataset.t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));if(tab==="quiz")qz=null;render()});
+app.addEventListener("change",e=>{if(e.target.id==="cat"){cat=e.target.value;if(tab==="card")newDeck();else qz=null;render()}});
+app.addEventListener("click",e=>{const t=e.target.closest("button,.card");if(!t)return;const id=t.id;
+ if(tab==="card"){if(id==="flip"||id==="show"){if(!open){open=true;render()}}else if(id==="yes")mark(1);else if(id==="no")mark(0);else if(id==="skip"){pos++;render()}else if(id==="ng"){onlyNG=!onlyNG;newDeck();render()}else if(id==="again"){newDeck();render()}else if(id==="reset"){st={};save();newDeck();render()}}
+ else if(tab==="quiz"){if(t.classList.contains("opt")&&qz.pick===null){const k=+t.dataset.k,i=qz.list[qz.i];qz.pick=k;if(k===2){qz.ok++;delete qmiss[i]}else qmiss[i]=1;qsave();render()}else if(id==="qnext"){qz.i++;qz.pick=null;qz.opts=null;render()}else if(id==="qnew"){newQuiz();render()}else if(id==="qretry"||id==="qmiss"){qOnlyMiss=id==="qretry"?true:!qOnlyMiss;newQuiz();render()}}
+ else if(tab==="calc"){if(id==="cshow"){cshow=true;render()}else if(id==="cnext"){cq=null;render()}}
+});
+document.addEventListener("keydown",e=>{if(tab!=="card")return;if(e.key===" "){e.preventDefault();if(!open){open=true;render()}}else if(open&&e.key==="ArrowRight")mark(1);else if(open&&e.key==="ArrowLeft")mark(0)});
+newDeck();render();
+}
+</script>
+</body>
+</html>
