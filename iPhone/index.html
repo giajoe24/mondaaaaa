@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>機械製図 問題アプリ</title>
+<style>
+:root{
+  --bg:#f6f4ef; --card:#fff; --ink:#1d1d1f; --sub:#6b6b70; --line:#e3e0d8;
+  --acc:#2f5d8a; --acc2:#e8eef5; --ok:#2e7d4f; --okbg:#e6f3eb; --ng:#b8402f; --ngbg:#f8e8e5;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#161618;--card:#222226;--ink:#f1f1f3;--sub:#9a9aa2;--line:#34343a;
+  --acc:#7fb0e0;--acc2:#24303c;--ok:#6cc391;--okbg:#1d3326;--ng:#e88b7c;--ngbg:#3a2320;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.7}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:20px;margin:6px 0 2px;letter-spacing:.02em}
+.lead{color:var(--sub);font-size:13px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.mode{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;
+  font:inherit;color:inherit}
+.mode:active{transform:scale(.99)}
+.mode .ic{width:40px;height:40px;border-radius:10px;background:var(--acc2);color:var(--acc);
+  display:grid;place-items:center;font-weight:700;font-size:16px;flex:none}
+.mode b{display:block;font-size:15px}
+.mode small{color:var(--sub);font-size:12px}
+.mode .best{margin-left:auto;font-size:12px;color:var(--sub);text-align:right;white-space:nowrap}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 16px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.back{border:none;background:none;color:var(--acc);font:inherit;font-size:14px;cursor:pointer;padding:4px 0}
+.prog{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--acc);transition:width .25s}
+.cnt{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:11px;color:var(--acc);background:var(--acc2);border-radius:6px;padding:1px 8px;margin-bottom:8px}
+.q{font-size:16px;margin:0 0 14px}
+.q .blank{display:inline-block;min-width:3.5em;border-bottom:2px solid var(--acc);margin:0 2px}
+.sym{font-size:44px;text-align:center;font-weight:600;margin:4px 0 12px;font-family:"Times New Roman",serif}
+.ch{display:block;width:100%;text-align:left;font:inherit;font-size:15px;color:var(--ink);
+  background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.ch.ok{border-color:var(--ok);background:var(--okbg)}
+.ch.ng{border-color:var(--ng);background:var(--ngbg)}
+.ch:disabled{cursor:default;color:var(--ink)}
+.ch.idk{text-align:center;font-size:14px;color:var(--sub);border-style:dashed;background:transparent;margin-top:4px}
+.ch.idk.picked{border-color:var(--sub);border-style:solid;color:var(--ink)}
+.fb.idk{background:var(--acc2);color:var(--acc)}
+.tf{display:flex;gap:10px}
+.tf .ch{text-align:center;font-size:24px;font-weight:700;padding:14px}
+.fb{border-radius:12px;padding:12px 14px;margin-top:6px;font-size:14px}
+.fb.ok{background:var(--okbg);color:var(--ok)}
+.fb.ng{background:var(--ngbg);color:var(--ng)}
+.fb p{margin:4px 0 0;color:var(--ink)}
+.next{width:100%;margin-top:12px;background:var(--acc);color:#fff;border:none;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.ghost{background:var(--card);color:var(--acc);border:1.5px solid var(--acc)}
+.score{text-align:center;padding:26px 16px}
+.score .big{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.score .of{color:var(--sub)}
+.rv{font-size:14px;border-top:1px solid var(--line);padding:10px 0}
+.rv:first-child{border-top:none}
+.rv .a{color:var(--ok);font-weight:600}
+.muted{color:var(--sub);font-size:12px}
+.hidden{display:none}
+.dgw{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.dg{display:block;width:100%;height:auto;color:var(--ink);font-family:inherit;background:var(--card)}
+.dg text{font-size:13px;fill:currentColor}.dg text.sm{font-size:11.5px}.dg text.em{fill:var(--ng);font-size:12px}.dg text.ok{fill:var(--ok);font-size:12px}.dg text.b{font-weight:600}
+.dg .lk{stroke:currentColor;stroke-width:2.2}.dg .ln{stroke:currentColor;stroke-width:.9}.dg .lc{stroke:currentColor;stroke-width:.9;stroke-dasharray:12 3 2 3}
+.dg .lr{stroke:var(--ng);stroke-width:1.4}.dg .lf{stroke:currentColor;stroke-width:.6;stroke-dasharray:2 3;opacity:.5}.dg .ld{stroke:currentColor;stroke-width:.6;stroke-dasharray:3 2}.dg .emf{fill:var(--ng)}
+.ref{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.refh{font-size:13px;color:var(--sub);margin-bottom:6px}
+.zw{overflow-x:auto;margin-bottom:8px;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.zw img{display:block;width:100%;background:#fff}
+.zw.big{cursor:zoom-out}
+.zw.big img{width:200%;max-width:none}
+.ask{width:100%;background:transparent;color:var(--acc);border:1.5px dashed var(--acc);border-radius:12px;padding:10px;font:inherit;font-size:14px;cursor:pointer;margin-top:2px}
+.pg{font-size:11px;color:var(--sub);margin-left:4px}
+.pgl{font-size:12px;color:var(--sub)!important;margin-top:6px!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+// ===== 問題データ（機械製図法 p.330–342） =====
+// MC: q内の「＿＿」が空欄。a=正解, d=誤答3つ, e=解説
+const MC = [
+ {s:"一般原則",q:"円弧の部分の寸法は、円弧が＿＿までは半径で表し、それを超える場合は直径で表す。",a:"180°",d:["90°","120°","270°"],e:"180°までは半径、超えたら直径。180°以内でも必要があれば直径を記入する。"},
+ {s:"一般原則",q:"寸法は、なるべく＿＿に集中して記入する。",a:"主投影図",d:["側面図","断面図","補助投影図"],e:"主投影図に集中して記入する。"},
+ {s:"一般原則",q:"図面に示す寸法は、特に明示しない限り、対象物の＿＿寸法を記入する。",a:"仕上がり",d:["素材","加工前","参考"],e:"特に明示しない限り仕上がり寸法。"},
+ {s:"一般原則",q:"寸法は、なるべく＿＿して求める必要のないように記入する。",a:"計算",d:["測定","換算","作図"],e:"現場で計算しなくて済むように記入する。"},
+ {s:"一般原則",q:"関連する寸法は、なるべく＿＿にまとめて記入する。",a:"1箇所",d:["複数の図","断面図","別表"],e:"関連する寸法は1箇所にまとめる。"},
+ {s:"一般原則",q:"寸法は、＿＿を避ける。",a:"重複記入",d:["累進記入","並列記入","座標記入"],e:"同じ寸法を2回書かない。"},
+ {s:"一般原則",q:"寸法は、＿＿ごとに配列を分けて記入する。",a:"工程",d:["部品","材料","図面"],e:"工程ごとに配列を分けて記入する。"},
+ {s:"一般原則",q:"参考寸法は、寸法数値に＿＿をつけて示す。",a:"（ ）",d:["［ ］","＜ ＞","※"],e:"参考寸法は丸括弧。"},
+ {s:"一般原則",q:"寸法の許容限界を指示するときに従うJIS規格は？　＿＿",a:"JIS Z 8318",d:["JIS B 0001","JIS B 0002","JIS Z 8114"],e:"機能上（互換性を含む）必要な場合、JIS Z 8318により許容限界を指示する。"},
+ {s:"寸法補助線",q:"寸法補助線は、寸法線を＿＿まで延長する。",a:"わずかに越える",d:["ちょうど接する","大きく越える","2mm手前"],e:"寸法線をわずかに越えるまで延長する。"},
+ {s:"寸法補助線",q:"特に必要な場合、寸法補助線は寸法線に対して適当な角度（＿＿がよい）をもつ平行線で引くことができる。",a:"60°",d:["30°","45°","75°"],e:"斜めに引くときは60°がよい。"},
+ {s:"寸法補助線",q:"丸みや面取りがある2面の交わる位置は、丸み・面取り以前の形状を＿＿で表し、その交点から寸法補助線を引き出す。",a:"細い実線",d:["太い実線","細い破線","細い一点鎖線"],e:"細い実線で表し、交点から寸法補助線を引き出す。"},
+ {s:"寸法線",q:"寸法線の端末記号は、矢印・黒丸・＿＿の3種類。",a:"斜線",d:["白丸","三角","十字"],e:"矢印・黒丸・斜線。1枚の図面で混用しない。"},
+ {s:"寸法線",q:"角度を記入する寸法線は、2辺の交点を中心とした＿＿で表す。",a:"円弧",d:["直線","折れ線","破線"],e:"角度の寸法線は円弧。"},
+ {s:"寸法線",q:"引出線を形状を表す線の内側から引き出す場合、引き出した箇所に＿＿をつける。",a:"黒丸",d:["矢印","斜線","何もつけない"],e:"外形線から→矢印、内側から→黒丸。"},
+ {s:"寸法線",q:"狭い所で寸法線から斜めに引出線を出して数値を書く場合、引出線の引き出す側の端には＿＿。",a:"何もつけない",d:["矢印をつける","黒丸をつける","斜線をつける"],e:"寸法線から引き出す引出線の端には何もつけない。"},
+ {s:"寸法数値",q:"長さの寸法数値は、通常＿＿の単位で記入し、単位記号はつけない。",a:"ミリメートル",d:["センチメートル","メートル","インチ"],e:"mm単位で、mmとは書かない。"},
+ {s:"寸法数値",q:"角度をラジアンで記入する場合の書き方として正しいものは？",a:"0.52rad",d:["0.52","0.52°","0.52r"],e:"ラジアンは単位記号radを記入する。"},
+ {s:"寸法数値",q:"寸法数値の書き方として正しいものは？",a:"22320",d:["22,320","22 320","22.320"],e:"けた数が多くてもコンマはつけない。"},
+ {s:"寸法数値",q:"垂直方向の寸法線に対する寸法数値は、図面の＿＿から読めるように書く。",a:"右辺",d:["左辺","下辺","上辺"],e:"水平→下辺から、垂直→右辺から読めるように。"},
+ {s:"寸法数値",q:"垂直線に対し左上から右下に向かい、約＿＿以下の角度をなす方向には寸法線の記入を避ける。",a:"30°",d:["15°","45°","60°"],e:"約30°以下の範囲は避ける。"},
+ {s:"寸法数値",q:"JIS B 0001の2010年改訂で削除された、寸法数値の書き方は？",a:"図面の下方から読めるように書く方法2",d:["右辺から読む方法1","累進寸法記入法","座標寸法記入法"],e:"2000年版の方法2が2010年改訂で削除された。"},
+ {s:"寸法補助記号",q:"半径の寸法線に矢印をつけるのは？",a:"円弧の側だけ",d:["中心の側だけ","両側","つけない"],e:"円弧側だけ。中心側にはつけない。"},
+ {s:"寸法補助記号",q:"半径の寸法線を折り曲げる場合、矢印の付いた部分は＿＿に向いていなければならない。",a:"正しい中心位置",d:["図面の中央","水平方向","折り曲げた中心"],e:"折り曲げてもよいが、矢印部分は正しい中心へ。"},
+ {s:"寸法補助記号",q:"円形の図に直径寸法を記入し、寸法線の両端に端末記号がつく場合、記号φは？",a:"省略する",d:["必ず記入する","Rに変える","括弧に入れる"],e:"両端に端末記号→φ省略。引出線で記入するときはφを書く。"},
+ {s:"寸法補助記号",q:"正方形を正面から見て図に正方形が表れている場合の寸法の入れ方は？",a:"□をつけずに両辺の寸法を記入",d:["□10と1辺だけ記入","対角線の長さを記入","□と両辺を記入"],e:"正方形が見えている図では□は使わず両辺を記入。"},
+ {s:"寸法補助記号",q:"45°面取り2mmの表し方として正しいものは？",a:"C2",d:["R2","2C","t2"],e:"C2 または 2×45°。"},
+ {s:"寸法補助記号",q:"円弧の長さは、＿＿を寸法線とし、数値の前に⌒をつける。",a:"同心の円弧",d:["弦に平行な直線","弦に直角な直線","接線"],e:"円弧の長さ→同心円弧の寸法線＋⌒。弦の長さ→弦に平行な直線。"},
+ {s:"寸法補助記号",q:"円弧で構成されない曲線の寸法は？",a:"曲線上の任意の点の座標寸法",d:["曲率半径","弦の長さ","円弧の長さ"],e:"円弧でない曲線は座標寸法で表す。"},
+ {s:"穴・キー溝",q:"「13×20キリ」の意味は？",a:"直径20mmのきり穴が13個",d:["直径13mmのきり穴が20個","長さ13mm×幅20mmの穴","深さ20mmの穴が13個"],e:"総数×穴の寸法。"},
+ {s:"穴・キー溝",q:"穴の深さを表す記号は？",a:"↧",d:["⌴","∨","t"],e:"↧＝穴深さ。⌴＝ざぐり、∨＝皿ざぐり。"},
+ {s:"穴・キー溝",q:"深さを記入しない穴は？",a:"貫通穴",d:["きり穴","座ぐり穴","止まり穴"],e:"貫通穴は深さを記入しない。"},
+ {s:"穴・キー溝",q:"穴の加工方法の区別を示すとき、まず示すのは？",a:"工具の呼び寸法または基準寸法",d:["加工方法の区別","穴の深さ","穴の個数"],e:"呼び寸法（基準寸法）→その後に加工方法（キリ・打抜き・鋳抜きなど）。"},
+ {s:"穴・キー溝",q:"軸のキー溝の深さは、＿＿からキー溝の底までの寸法で表す。",a:"キー溝と反対側の軸径面",d:["軸の中心","キー溝側の軸径面","キーの上面"],e:"反対側の軸径面から測る。"},
+ {s:"テーパ・こう配",q:"こう配を示す参照線は？",a:"水平に引く",d:["中心線に平行に引く","こう配と平行に引く","垂直に引く"],e:"テーパ→中心線に平行、こう配→水平。"},
+ {s:"ねじ",q:"ねじの通常図示法で、山の頂を表す線は？",a:"太い実線",d:["細い実線","細い破線","細い一点鎖線"],e:"山の頂＝太い実線、谷底＝細い実線。"},
+ {s:"ねじ",q:"ねじを端面から見た図で、谷底は細い実線の円周の約＿＿で表す。",a:"3/4",d:["1/2","2/3","全周"],e:"約3/4。できれば右上方に4分円をあける。"},
+ {s:"ねじ",q:"端面から見たねじで4分円をあける位置は、できれば＿＿。",a:"右上",d:["左上","右下","左下"],e:"できれば右上方。"},
+ {s:"ねじ",q:"隠れたねじの山の頂および谷底を表す線は？",a:"細い点線",d:["太い実線","細い実線","細い二点鎖線"],e:"隠れたねじの山の頂と谷底は、細い点線で表す（図8-91(c)）。"},
+ {s:"ねじ",q:"不完全ねじ部を表す線は？",a:"傾斜した細い実線",d:["傾斜した太い実線","細い破線","細い一点鎖線"],e:"必要な場合は傾斜した細い実線。省略できれば表さない。"},
+ {s:"ねじ",q:"ねじ部品の組立の図示で正しいのは？",a:"おねじ部品がめねじ部品を隠した状態で示す",d:["めねじ部品がおねじ部品を隠した状態で示す","両方を破線で示す","おねじは省略する"],e:"おねじが手前、めねじで隠さない。"},
+ {s:"歯車",q:"歯車の基準円（ピッチ円）を表す線は？",a:"細い一点鎖線",d:["太い実線","細い実線","細い破線"],e:"歯先円＝太い実線、基準円＝細い一点鎖線、歯底円＝細い実線。"},
+ {s:"歯車",q:"歯車を軸に直角な方向から断面で図示するとき、歯底の線は？",a:"太い実線",d:["細い実線","細い一点鎖線","省略する"],e:"断面図示では歯底も太い実線。"},
+ {s:"歯車",q:"歯すじの方向を表すのは？",a:"3本の細い実線",d:["2本の細い実線","3本の太い実線","1本の細い一点鎖線"],e:"3本の細い実線。"},
+ {s:"歯車",q:"側面図で歯底円を省略するのが原則なのは？",a:"かさ歯車・ウォームホイール",d:["平歯車・はすば歯車","ラック","内歯車"],e:"かさ歯車・ウォームホイールの側面図では省略が原則。"},
+ {s:"ばね",q:"重ね板ばねの、力の作用がない状態を示す線は？",a:"二点鎖線",d:["一点鎖線","破線","太い実線"],e:"ばね板が直線状の状態で図示し、無負荷状態を二点鎖線で。"},
+ {s:"ばね",q:"ばねの種類と形状だけを簡略図で表すとき、材料の中心線を描く線は？",a:"太い実線",d:["細い実線","細い一点鎖線","細い破線"],e:"中心線だけを太い実線で描く。"},
+ {s:"ばね",q:"コイルばねで連続部分を一部省略する場合、断面中心位置を示す線は？",a:"細い一点鎖線",d:["細い実線","太い実線","二点鎖線"],e:"省略部分は断面中心位置を細い一点鎖線で。"},
+ // ---- 追加：ペンを引いたのに問題がなかった箇所 ----
+ {p:"330",pen:1,s:"一般原則",q:"寸法は、対象物の機能・製作・＿＿などを考えて、必要と思われる寸法を明瞭に図面に指示する。",a:"組立",d:["検査","材料","価格"],e:"機能・製作・組立などを考えて記入する。"},
+ {p:"331",pen:1,s:"寸法補助線",q:"寸法は、通常は＿＿を用いて寸法線を記入し、この上に寸法数値を表示する。",a:"寸法補助線",d:["引出線","中心線","参照線"],e:"図が紛らわしくなるときは、寸法補助線によらなくてもよい。"},
+ {p:"333",pen:1,s:"寸法数値",q:"角度の寸法数値は、一般に＿＿の単位で記入し、必要がある場合には分および秒を併用する。",a:"度",d:["ラジアン","分","グラード"],e:"度で記入し、必要なら分・秒を併用。"},
+ {p:"335",pen:1,s:"寸法補助記号",q:"球の直径または半径の寸法は、寸法数値の前に球の記号＿＿を記入して表す。",a:"Sφ または SR",d:["φ または R","□ または C","CR または t"],e:"球の直径＝Sφ、球の半径＝SR。"},
+ {p:"335",pen:1,s:"寸法補助記号",q:"板の厚さは、厚さの寸法数値の前に、同じ大きさで記号＿＿を記入する。",a:"t",d:["T","C","□"],e:"厚さの記号は小文字の t。"},
+ {p:"336",pen:1,s:"寸法補助記号",q:"弦の長さは、弦に直角に寸法補助線を引き、＿＿寸法線を用いて表す。",a:"弦に平行な",d:["弦と同心の円弧の","弦に直角な","弦に45°の"],e:"弦→弦に平行な寸法線。円弧の長さ→同心の円弧＋⌒。"},
+ {p:"336",pen:1,s:"寸法補助記号",q:"円弧で構成する曲線の寸法は、一般にこれらの円弧の半径と、その中心または＿＿の位置とで表す。",a:"円弧の接線",d:["円弧の弦","円弧の端点","曲線の頂点"],e:"円弧で構成されない曲線は座標寸法。"},
+ {p:"337",pen:1,s:"穴・キー溝",q:"軸のキー溝の寸法は、キー溝の幅・深さ・長さ・位置および＿＿を表す寸法による。",a:"端部",d:["材質","表面粗さ","はめあい"],e:"幅・深さ・長さ・位置・端部。"},
+ {p:"337–338",pen:1,s:"穴・キー溝",q:"穴のキー溝の寸法は、キー溝の幅と＿＿を表す寸法による。",a:"深さ",d:["長さ","位置","端部"],e:"穴のキー溝は幅と深さ。"},
+];
+
+const TF = [
+ {s:"寸法線",q:"寸法線の端末記号は、1枚の図面の中で矢印と黒丸を自由に混用してよい。",a:false,e:"原則混用不可。狭くて矢印が描けない所だけ黒丸・斜線と混用可。"},
+ {s:"寸法数値",q:"寸法数値の小数点は下の点とする。",a:true,e:"例：123.25、12.00"},
+ {s:"寸法数値",q:"角度の度・分・秒の記号は、数字の右肩に記入する。",a:true,e:"例：6°21′5″"},
+ {s:"寸法線",q:"対称図形で中心線の片側だけを表した図では、寸法線は中心線を越えて延長し、その端には端末記号をつけない。",a:true,e:"誤解のおそれがなければ中心線を越えなくてもよい。"},
+ {s:"寸法線",q:"寸法線が隣接して連続する場合は、一直線上にそろえて記入するのがよい。",a:true,e:"関連する部分の寸法も一直線上に。"},
+ {s:"寸法補助記号",q:"半径の寸法線を円弧の中心まで引く場合は、記号Rを省略してもよい。",a:true,e:""},
+ {s:"寸法補助記号",q:"記号R・φ・Cは、寸法数値より小さく書く。",a:false,e:"寸法数値と同じ大きさで記入する。"},
+ {s:"寸法数値",q:"寸法数値の代わりに文字記号を用いてもよい。その場合は数値を別に表示する。",a:true,e:""},
+ {s:"寸法数値",q:"直径寸法が中心線方向に並ぶ場合、大きい寸法から順に外側へ並べる。",a:false,e:"小さい寸法から順に外側へ。狭い場合は交互に書いてもよい。"},
+ {s:"ねじ",q:"ねじの実形図示は、分かりやすいので積極的に使うのがよい。",a:false,e:"絶対に必要な場合だけ。つる巻線は可能な限り直線で。"},
+ {s:"ねじ",q:"直径6mm以下の小ねじは、さらに簡略に指示できる。",a:true,e:"規則的に並ぶ同形状・同寸法の穴やねじも同様（図8-94）。"},
+ {s:"歯車",q:"歯車の図示は、要目表と図を併用する。",a:true,e:"図には歯車素材（歯切り前）を製作するのに必要な寸法を記入。"},
+ {s:"ばね",q:"ばねは一般に、荷重がかかった使用状態で図示する。",a:false,e:"力の作用がない状態で図示する。"},
+ {s:"ばね",q:"ばねの自由寸法が参考値の場合は括弧をつけて表記する。",a:true,e:""},
+ {p:"339",pen:1,s:"ねじ",q:"不完全ねじ部は、省略できれば表さなくてよい。",a:true,e:"機能上・寸法指示上必要な場合だけ、傾斜した細い実線で表す。"},
+ {p:"341",s:"ばね",q:"コイルばねの正面図は、らせんで正確に描かなければならない。",a:false,e:"らせんではなく直線で表す。"},
+];
+
+const SYM = [
+ ["180°を超える直径","φ","まる / ふぁい"],
+ ["180°を超える球の直径","Sφ","えすまる / えすふぁい"],
+ ["正方形の辺","□","かく"],
+ ["半径","R","あーる"],
+ ["コントロール半径","CR","しーあーる"],
+ ["球半径","SR","えすあーる"],
+ ["円弧の長さ","⌒","えんこ"],
+ ["45°の面取り","C","しー"],
+ ["厚さ","t","てぃー"],
+ ["ざぐり・深ざぐり","⌴","ざぐり / ふかざぐり"],
+ ["皿ざぐり","∨","さらざぐり"],
+ ["穴深さ","↧","あなふかさ"],
+];
+
+// 各問題の出典ページ（MC・TF の並び順に対応）
+const MP=["330", "331", "331", "331", "331", "331", "331", "331", "331", "331", "331", "331", "332", "332", "332", "332", "333", "333", "333", "333", "333", "333", "334", "334", "335", "335", "336", "336", "336", "337", "337", "337", "336", "337", "338", "338", "338", "338", "338", "339", "339", "340", "340", "340", "340", "341", "342", "341"];
+const TP=["332", "333", "333", "332–333", "332", "334", "334–336", "334", "334", "338", "340", "340", "341", "341", "341"];
+// 赤ペンを引いた箇所から作った問題（MC・TF の番号）
+const PEN_M=new Set([1,3,4,5,7,11,16,19,23,24,25,26,27,29,30,32,35,36,37,39,40,41,42]);
+const PEN_T=new Set([6]);
+// 表8-2で赤線が引かれていない行（コントロール半径・皿ざぐり）
+const SYM_NOPEN=new Set([4,10]);
+// 教科書の切り抜き画像（img/）
+const REF={m0:"A330_3",m1:"B331_a",m2:"B331_a",m3:"B331_a",m4:"B331_a",m5:"B331_a",m6:"B331_a",m7:"B331_b",m8:"B331_b",m9:"B331_c",m10:"B331_c",m11:"B331_d",m12:"C332_a",m13:"C332_b,C332_a",m14:"C332_c",m15:"C332_c",m16:"D333_b",m17:"D333_c",m18:"D333_c",m19:"D333_d",m20:"D333_e",m21:"D333_d",m22:"E334_R,F335_Rfig",m23:"E334_bend,F335_Rfig",m24:"F335_phi",m25:"F335_sq",m26:"G336_C",m27:"G336_arc",m28:"G336_curve",m29:"H337_cnt",m30:"H337_depth",m31:"H337_depth",m32:"G336_hole,H337_83",m33:"H337_key",m34:"P338_taper",m35:"P338_normal",m36:"P338_end",m37:"P338_end",m38:"P338_normal,P338_end",m39:"P339_top",m40:"P339_top",m41:"I340_gear",m42:"I340_gear",m43:"I340_gear",m44:"I340_gear,I340_gfig",m45:"J341_spring",m46:"K342",m47:"J341_spring",m48:"A330_1",m49:"B331_b",m50:"D333_b",m51:"F335_sph",m52:"F335_t",m53:"G336_arc",m54:"G336_curve",m55:"H337_key",m56:"H337_key,P338_key",t0:"C332_a",t1:"D333_c",t2:"D333_b",t3:"C332_d,D333_a",t4:"C332_b",t5:"E334_R",t6:"E334_R,F335_phi,G336_C",t7:"E334_67",t8:"E334_67",t9:"P338_real",t10:"I340_6mm",t11:"I340_gear",t12:"J341_spring",t13:"J341_spring",t14:"P339_top",t15:"J341_spring"};
+const {DIA,QDIA}=(()=>{
+// ===== 図解（赤ペンの問題用） =====
+const DEFS='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1.5L10 5L0 8.5z" fill="currentColor"/></marker><pattern id="hc" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="currentColor" stroke-width="0.8" opacity="0.5"/></pattern></defs>';
+const SV=(h,b)=>`<svg viewBox="0 0 320 ${h}" class="dg" role="img" text-anchor="middle">${DEFS}${b}</svg>`;
+const K=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="lk"/>`;          // 太い実線
+const N=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ln"/>`;          // 細い実線
+const CL=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="lc"/>`;         // 一点鎖線
+const RD=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="lr"/>`;         // 強調（赤）
+const DM=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ln" marker-start="url(#ar)" marker-end="url(#ar)"/>`;
+const AR=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ln" marker-end="url(#ar)"/>`;
+const T=(x,y,s,o='')=>`<text x="${x}" y="${y}" ${o}>${s}</text>`;
+const TS=(x,y,s,o='')=>`<text x="${x}" y="${y}" class="sm" ${o}>${s}</text>`;
+const TR=(x,y,s,o='')=>`<text x="${x}" y="${y}" class="em" ${o}>${s}</text>`;
+const RV=(x,y,s)=>`<text x="${x}" y="${y}" transform="rotate(-90 ${x} ${y})">${s}</text>`;
+const RECT=(x,y,w,h,c='lk')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="${c}" fill="none"/>`;
+const CIR=(x,y,r,c='lk')=>`<circle cx="${x}" cy="${y}" r="${r}" class="${c}" fill="none"/>`;
+const P=(d,c='lk')=>`<path d="${d}" class="${c}" fill="none"/>`;
+const HATCH=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#hc)" stroke="none"/>`;
+
+const DIA={
+ main: SV(175,
+   RECT(30,15,120,35)+RECT(30,70,120,60)+RECT(190,70,60,60)+
+   TS(90,37,'平面図')+TS(220,104,'側面図')+T(90,104,'正面図',`class="em"`)+
+   N(30,133,30,152)+N(150,133,150,152)+DM(30,147,150,147)+T(90,142,'120')+
+   N(28,70,10,70)+N(28,130,10,130)+DM(15,70,15,130)+RV(11,100,'60')+
+   TS(160,170,'寸法はなるべく正面図（主投影図）にまとめる')),
+ calc: SV(160,
+   RECT(20,60,120,40)+CIR(110,80,6,'ln')+
+   N(20,58,20,28)+N(140,58,140,28)+DM(20,33,140,33)+T(80,28,'120')+
+   N(110,88,110,128)+N(140,102,140,128)+DM(110,123,140,123)+T(125,118,'30')+
+   RECT(175,60,120,40)+CIR(265,80,6,'ln')+
+   N(175,58,175,28)+N(295,58,295,28)+DM(175,33,295,33)+T(235,28,'120')+
+   N(175,102,175,128)+N(265,88,265,128)+DM(175,123,265,123)+T(220,118,'90')+
+   TR(80,150,'× 120−30を計算させる')+T(235,150,'○ 90と直接書く',`class="ok"`)),
+ onepl: SV(165,
+   RECT(40,40,200,80)+CIR(110,80,12,'lk')+CL(90,80,130,80)+CL(110,60,110,100)+
+   N(40,122,40,150)+N(110,94,110,150)+DM(40,145,110,145)+T(75,140,'70')+
+   N(38,120,18,120)+N(96,80,18,80)+DM(23,80,23,120)+RV(18,100,'40')+
+   AR(160,25,119,71)+N(160,25,210,25)+T(185,20,'φ24')+
+   TS(230,150,'穴の直径と位置は')+TS(230,165,'同じ図にまとめる')),
+ dup: SV(150,
+   RECT(40,40,100,70)+RECT(190,40,70,70)+
+   N(38,40,20,40)+N(38,110,20,110)+DM(25,40,25,110)+RV(20,75,'60')+
+   N(262,40,285,40)+N(262,110,285,110)+`<line x1="280" y1="40" x2="280" y2="110" class="lr" marker-start="url(#ar)" marker-end="url(#ar)"/>`+
+   `<text x="292" y="75" class="em" transform="rotate(-90 292 75)">60</text>`+TR(305,62,'×')+
+   TS(160,140,'同じ寸法（60）を2回書かない＝重複記入')),
+ ref: SV(130,
+   RECT(20,60,280,30)+N(20,58,20,28)+N(65,58,65,28)+N(255,58,255,28)+N(300,58,300,28)+
+   DM(20,35,65,35)+DM(65,35,255,35)+DM(255,35,300,35)+T(42,30,'45')+T(160,30,'230')+T(277,30,'45')+
+   N(20,92,20,120)+N(300,92,300,120)+DM(20,115,300,115)+TR(160,110,'(320)')+
+   TS(160,128,'計算でわかる全長は（ ）付き＝参考寸法')),
+ fillet: SV(150,
+   P('M60 150 L60 80 A20 20 0 0 1 80 60 L220 60')+
+   N(60,80,60,60)+N(80,60,60,60)+`<circle cx="60" cy="60" r="2.5" class="emf"/>`+
+   N(60,58,60,22)+N(220,58,220,22)+DM(60,28,220,28)+T(140,22,'50')+
+   TS(150,100,'丸みの前の角を細い実線で表し')+TS(150,118,'その交点から寸法補助線を引く')),
+ units: SV(130,
+   RECT(20,60,120,25)+N(20,58,20,28)+N(140,58,140,28)+DM(20,33,140,33)+T(80,28,'50')+
+   TS(80,104,'長さ：mm単位')+TS(80,121,'mmは書かない')+
+   K(190,90,300,90)+K(190,90,285,35)+P('M265 90 A75 75 0 0 0 255 52.5','ln" marker-start="url(#ar)" marker-end="url(#ar)')+
+   T(280,72,'30°')+TS(240,104,'角度：度（°）')+TS(240,121,'で書く')),
+ read: SV(165,
+   RECT(80,40,150,80)+N(80,122,80,150)+N(230,122,230,150)+DM(80,145,230,145)+T(155,140,'150')+
+   N(232,40,285,40)+N(232,120,285,120)+DM(280,40,280,120)+RV(274,80,'80')+
+   TS(155,72,'横の寸法は下から')+TS(155,92,'縦の寸法は右から読む')),
+ ext: SV(140,
+   RECT(60,60,140,50)+N(60,57,60,20)+N(200,57,200,20)+DM(60,28,200,28)+T(130,22,'140')+
+   `<line x1="205" y1="28" x2="244" y2="28" class="ld"/>`+TS(248,32,'寸法線','text-anchor="start"')+
+   `<line x1="205" y1="45" x2="244" y2="45" class="ld"/>`+TS(248,49,'寸法補助線','text-anchor="start"')+
+   TS(160,132,'補助線は寸法線をわずかに越えるまで延ばす')),
+ rbend: SV(245,
+   `<rect x="10" y="12" width="230" height="195" class="lf" fill="none"/>`+TS(45,26,'紙の範囲')+
+   P('M25 60 A260 260 0 0 1 225 60')+
+   `<line x1="125" y1="150" x2="125" y2="42" class="lr" marker-end="url(#ar)"/>`+
+   P('M125 150 L150 165 L138 188','ln')+`<circle cx="138" cy="188" r="2.5" fill="currentColor"/>`+
+   `<line x1="125" y1="195" x2="125" y2="225" class="lr" stroke-dasharray="3 3"/>`+`<circle cx="125" cy="230" r="3" class="emf"/>`+
+   T(140,100,'R260','text-anchor="start"')+TS(150,192,'仮の中心','text-anchor="start"')+TS(135,234,'本当の中心（紙の外）','text-anchor="start"')+
+   TR(280,70,'矢印側は')+TR(280,88,'本当の中心')+TR(280,106,'へ向ける')),
+ phi: SV(190,
+   CIR(80,90,45)+DM(48.2,121.8,111.8,58.2)+T(72,84,'20')+
+   CIR(230,100,35)+AR(270,42,253,73)+N(270,42,310,42)+T(290,36,'φ20')+
+   CL(185,100,275,100)+CL(230,55,230,145)+
+   TS(80,162,'両端に矢印')+TS(80,180,'→ φは書かない')+TS(230,162,'引出線で書く')+TS(230,180,'→ φを書く')),
+ R: SV(150,
+   P('M140 120 A80 80 0 0 0 60 40')+K(140,120,140,140)+K(60,40,40,40)+
+   `<line x1="60" y1="120" x2="116.6" y2="63.4" class="ln" marker-end="url(#ar)"/>`+
+   `<path d="M55 120 h10 M60 115 v10" class="ln"/>`+T(78,82,'R80')+
+   TS(230,70,'半径 → R')+TS(230,90,'矢印は円弧側だけ')+TS(230,110,'Rは数字と同じ大きさ')),
+ square: SV(170,
+   RECT(20,50,120,50)+N(20,50,140,100)+N(20,100,140,50)+
+   N(142,50,165,50)+N(142,100,165,100)+DM(160,50,160,100)+T(178,80,'□10','text-anchor="start"')+
+   RECT(225,40,60,60)+N(225,102,225,125)+N(285,102,285,125)+DM(225,120,285,120)+T(255,115,'10')+
+   N(287,40,310,40)+N(287,100,310,100)+DM(305,40,305,100)+RV(300,70,'10')+
+   TS(80,150,'四角に見えない図')+TS(80,166,'→ □10')+TS(255,150,'正方形が見える図')+TS(255,166,'→ □なしで両辺')),
+ chamfer: SV(150,
+   P('M50 50 L150 50 L150 110 L50 110 L40 100 L40 60 Z')+N(50,50,50,110)+
+   AR(85,25,46,54)+N(85,25,125,25)+T(105,20,'C2')+
+   P('M200 50 L300 50 L300 110 L200 110 L190 100 L190 60 Z')+N(200,50,200,110)+
+   AR(235,25,196,54)+N(235,25,290,25)+T(262,20,'2×45°')+
+   TS(160,138,'45°の面取りは「C2」でも「2×45°」でもよい')),
+ arc: SV(160,
+   P('M20 115 A75 75 0 0 1 140 115')+N(20,113,20,46)+N(140,113,140,46)+DM(20,52,140,52)+T(80,46,'40')+
+   P('M175 115 A75 75 0 0 1 295 115')+N(175,113,175,60)+N(295,113,295,60)+
+   P('M175 68 A110 110 0 0 1 295 68','ln" marker-start="url(#ar)" marker-end="url(#ar)')+T(235,42,'⌒42')+
+   TS(80,140,'弦の長さ')+TS(80,156,'→ 平行な直線')+TS(235,140,'円弧の長さ')+TS(235,156,'→ 同心の円弧＋⌒')),
+ holes: SV(262,
+   RECT(20,40,285,45)+[50,105,160,215,270].map(x=>CIR(x,62,7,'lk')).join('')+
+   AR(90,22,55,57)+N(90,22,170,22)+T(130,16,'5×8キリ')+
+   TS(160,102,'5×8キリ ＝ 直径8のキリ穴が5個')+
+   RECT(20,150,125,65)+HATCH(20,150,52,65)+HATCH(92,150,53,65)+HATCH(72,202,20,13)+
+   P('M72 150 L72 192 L82 202 L92 192 L92 150','lk')+AR(110,134,92,151)+N(110,134,145,134)+T(125,128,'φ8↧12')+
+   RECT(175,150,125,65)+HATCH(175,150,45,65)+HATCH(256,150,44,65)+HATCH(220,162,9,53)+HATCH(247,162,9,53)+
+   P('M220 150 L220 162 L229 162 L229 215 M247 215 L247 162 L256 162 L256 150','lk')+
+   AR(272,134,256,151)+N(272,134,316,134)+T(294,128,'⌴φ18')+
+   TS(82,235,'↧ ＝ 穴の深さ')+TS(82,252,'（貫通穴は書かない）')+TS(238,235,'⌴ ＝ ざぐり')+TS(238,252,'（入口を一段広く）')),
+ sphere: SV(150,
+   CIR(80,80,45)+DM(35,80,125,80)+T(80,72,'Sφ90')+
+   P('M190 55 L260 55 A25 25 0 0 1 260 105 L190 105')+K(190,55,190,105)+CL(180,80,295,80)+
+   `<line x1="260" y1="80" x2="277.7" y2="62.3" class="ln" marker-end="url(#ar)"/>`+T(290,50,'SR25')+
+   TS(80,142,'球の直径 → Sφ')+TS(245,142,'球の半径 → SR')),
+ thick: SV(130,
+   RECT(50,30,150,70)+CIR(85,65,10,'lk')+CIR(165,65,10,'lk')+
+   AR(240,20,201,40)+N(240,20,280,20)+T(260,14,'t2')+
+   TS(160,120,'板の厚さ2mm → t2（数字と同じ大きさ）')),
+ curve: SV(185,
+   P('M30 140 A60 60 0 0 1 90 80 A40 40 0 0 0 130 40')+
+   `<path d="M85 140 h10 M90 135 v10 M85 40 h10 M90 35 v10" class="ln"/>`+
+   `<line x1="90" y1="140" x2="47.6" y2="97.6" class="ln" marker-end="url(#ar)"/>`+T(52,130,'R60')+
+   `<line x1="90" y1="40" x2="118.3" y2="68.3" class="ln" marker-end="url(#ar)"/>`+T(118,40,'R40','text-anchor="start"')+
+   P('M180 140 L195 112 L210 96 L225 92 L240 98 L255 108 L270 110 L285 102 L300 92 L310 88')+K(180,140,310,140)+
+   [[210,96],[240,98],[270,110],[300,92]].map(([x,y])=>AR(x,140,x,y+1)).join('')+
+   TS(85,160,'円弧の曲線')+TS(85,175,'→ 半径と中心（接線）')+TS(245,160,'円弧でない曲線')+TS(245,175,'→ 座標で表す')),
+ key: SV(185,
+   P('M94 65.9 A45 45 0 1 1 76 65.9 L76 73 L94 73 Z')+CL(30,110,140,110)+CL(85,55,85,165)+
+   N(76,64,76,38)+N(94,64,94,38)+DM(76,44,94,44)+T(85,36,'幅')+
+   N(87,155,155,155)+N(96,73,155,73)+DM(150,73,150,155)+
+   TR(158,108,'深さは','text-anchor="start"')+TR(158,126,'反対側から','text-anchor="start"')+
+   TS(160,180,'軸のキー溝：幅・深さ・長さ・位置・端部')),
+ hkey: SV(195,
+   CIR(110,100,55)+P('M103 70.8 A30 30 0 1 0 117 70.8 L117 60 L103 60 Z')+CL(45,100,175,100)+CL(110,35,110,165)+
+   N(103,58,103,25)+N(117,58,117,25)+DM(103,31,117,31)+T(110,22,'幅')+
+   N(112,130,190,130)+N(119,60,190,60)+DM(185,60,185,130)+T(195,100,'深さ','text-anchor="start" class="em"')+
+   TS(160,188,'穴のキー溝：幅と深さ')),
+ thread: SV(165,
+   K(20,40,170,40)+K(20,100,170,100)+K(20,40,20,100)+N(20,48,140,48)+N(20,92,140,92)+K(140,40,140,100)+CL(10,70,185,70)+
+   TR(80,30,'山の頂＝太い実線')+T(80,120,'谷底＝細い実線（内側）',`class="sm"`)+
+   CIR(255,70,32)+P('M255 46 A24 24 0 1 0 279 70','ln')+CL(215,70,295,70)+CL(255,30,255,110)+
+   TS(255,128,'端面から見た図')+TS(255,144,'細い円は3/4')+TR(255,160,'右上をあける')),
+ assembly: SV(255,
+   HATCH(30,50,60,120)+HATCH(150,50,60,120)+HATCH(30,170,68,45)+HATCH(142,170,68,45)+HATCH(30,215,180,25)+
+   RECT(30,50,180,190)+RECT(75,15,90,35)+
+   K(90,50,90,170)+K(150,50,150,170)+K(90,170,150,170)+N(98,50,98,170)+N(142,50,142,170)+
+   K(98,170,98,215)+K(142,170,142,215)+K(98,215,142,215)+N(90,170,90,215)+N(150,170,150,215)+
+   `<line x1="212" y1="110" x2="222" y2="110" class="ld"/>`+TR(226,104,'ボルトの','text-anchor="start"')+TR(226,122,'線で描く','text-anchor="start"')+
+   `<line x1="212" y1="192" x2="222" y2="192" class="ld"/>`+TS(226,186,'穴の線','text-anchor="start"')+TS(226,204,'で描く','text-anchor="start"')),
+ incomplete: SV(165,
+   K(20,50,260,50)+K(20,110,260,110)+K(20,50,20,110)+N(20,58,150,58)+N(20,102,150,102)+K(150,50,150,110)+
+   RD(150,58,172,50)+RD(150,102,172,110)+CL(10,80,275,80)+
+   TS(85,130,'完全なねじ部')+TR(165,38,'不完全ねじ部＝傾斜した細い実線')+TS(220,130,'ねじのない軸')+
+   TS(160,155,'省略できれば描かなくてよい')),
+ gear: SV(175,
+   `<polyline points="20,115 35,115 47,50 73,50 85,115 105,115 117,50 143,50 155,115 175,115 187,50 213,50 225,115 235,115" class="lk" fill="none"/>`+
+   K(20,115,20,145)+K(235,115,235,145)+
+   `<line x1="15" y1="50" x2="235" y2="50" class="lf"/>`+`<line x1="15" y1="115" x2="235" y2="115" class="lf"/>`+CL(15,85,235,85)+
+   T(243,46,'歯先円','text-anchor="start" class="b"')+TS(243,62,'太い実線','text-anchor="start"')+
+   TR(243,82,'基準円','text-anchor="start"')+TS(243,98,'細い一点鎖線','text-anchor="start"')+
+   T(243,118,'歯底円','text-anchor="start" class="b"')+TS(243,134,'細い実線','text-anchor="start"')+
+   `<line x1="95" y1="119" x2="95" y2="150" class="ld"/>`+TS(95,165,'ここが歯底')),
+ gearsec: SV(195,
+   RECT(30,30,100,120)+CL(25,40,135,40)+CL(25,140,135,140)+N(30,50,130,50)+N(30,130,130,130)+CL(20,90,140,90)+
+   HATCH(185,50,100,80)+RECT(185,30,100,120)+CL(180,40,290,40)+CL(180,140,290,140)+K(185,50,285,50)+K(185,130,285,130)+CL(175,90,295,90)+
+   TS(80,170,'外観')+TS(80,187,'歯底＝細い実線')+TS(235,170,'断面')+TR(235,187,'歯底＝太い実線')),
+};
+// 問題ID → 図
+const QDIA={m1:"main",m3:"calc",m4:"onepl",m5:"dup",m7:"ref",m11:"fillet",m16:"units",m19:"read",m23:"rbend",m24:"phi",m25:"square",m26:"chamfer",m27:"arc",
+ m29:"holes",m30:"holes",m32:"holes",m35:"thread",m36:"thread",m37:"thread",m39:"incomplete",m40:"assembly",m41:"gear",m42:"gearsec",
+ m49:"ext",m50:"units",m51:"sphere",m52:"thick",m53:"arc",m54:"curve",m55:"key",m56:"hkey",t6:"phi",t14:"incomplete",
+ s0:"phi",r0:"phi",s1:"sphere",r1:"sphere",s2:"square",r2:"square",s3:"R",r3:"R",s5:"sphere",r5:"sphere",s6:"arc",r6:"arc",
+ s7:"chamfer",r7:"chamfer",s8:"thick",r8:"thick",s9:"holes",r9:"holes",s11:"holes",r11:"holes"};
+
+return {DIA,QDIA};
+})();
+// ===== ロジック =====
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]} return a; };
+const pick = (arr,n,ex) => shuffle(arr.filter(x=>x!==ex)).slice(0,n);
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+
+const refOf=q=>(REF[q.id]||(/^[sr]/.test(q.id)?"E334_tab":"")).split(",").filter(Boolean);
+function buildPool(){
+  const p=[];
+  MC.forEach((x,i)=>p.push({id:"m"+i,type:"mc",pen:x.pen?true:PEN_M.has(i),pg:x.p||MP[i],sec:x.s,q:x.q,a:x.a,ch:shuffle([x.a,...x.d]),e:x.e}));
+  TF.forEach((x,i)=>p.push({id:"t"+i,type:"tf",pen:x.pen?true:PEN_T.has(i),pg:x.p||TP[i],sec:x.s,q:x.q,a:x.a?"○":"×",ch:["○","×"],e:x.e}));
+  SYM.forEach((x,i)=>{
+    p.push({id:"s"+i,type:"sym",pen:!SYM_NOPEN.has(i),pg:"334（表8-2）",sec:"記号",sym:x[1],q:"この寸法補助記号の意味は？",a:x[0],ch:shuffle([x[0],...pick(SYM.map(s=>s[0]),3,x[0])]),e:`${x[1]}＝${x[0]}（読み：${x[2]}）`});
+    p.push({id:"r"+i,type:"mc",pen:!SYM_NOPEN.has(i),pg:"334（表8-2）",sec:"記号",q:`「${x[0]}」を表す寸法補助記号は？`,a:x[1],ch:shuffle([x[1],...pick(SYM.map(s=>s[1]),3,x[1])]),e:`読み方：${x[2]}`});
+  });
+  return p;
+}
+const POOL = buildPool();
+const MODES = [
+  {k:"all",ic:"全",t:"全部まぜて",d:"すべての問題からランダム",f:()=>true},
+  {k:"pen",ic:"✏️",t:"ペンのとこだけ",d:"赤線を引いたところから",f:q=>q.pen},
+  {k:"mc",ic:"4",t:"4択問題",d:"寸法・ねじ・歯車・ばね",f:q=>q.type==="mc"&&!q.id.startsWith("r")},
+  {k:"tf",ic:"○×",t:"○×問題",d:"ひっかけに注意",f:q=>q.type==="tf"},
+  {k:"sym",ic:"φ",t:"寸法補助記号",d:"表8-2 の記号と意味",f:q=>q.sec==="記号"},
+  {k:"miss",ic:"✕",t:"間違えた問題だけ",d:"",f:q=>store.get("miss",[]).includes(q.id)},
+];
+let N = store.get("n",10);
+let S = null;
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function home(){
+  const miss = store.get("miss",[]);
+  const best = store.get("best",{});
+  app.innerHTML = `
+   <h1>機械製図 問題アプリ</h1>
+   <p class="lead">寸法記入方法・ねじ・歯車・ばね（p.330–342）／全${POOL.length}問</p>
+   <div class="muted">1回の問題数</div>
+   <div class="opts">${[10,20,30,0].map(n=>`<button class="chip ${N===n?"on":""}" data-n="${n}">${n||"全部"}</button>`).join("")}</div>
+   ${MODES.map(m=>{
+     const cnt = POOL.filter(m.f).length;
+     if(m.k==="miss"&&!cnt) return "";
+     const b = best[m.k]!=null?`ベスト ${best[m.k]}%`:"";
+     return `<button class="mode" data-m="${m.k}"><span class="ic">${m.ic}</span>
+       <span><b>${m.t}</b><small>${m.k==="miss"?cnt+"問あります":m.d+"・"+cnt+"問"}</small></span>
+       <span class="best">${b}</span></button>`}).join("")}
+  `;
+  app.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{N=+b.dataset.n;store.set("n",N);home()});
+  app.querySelectorAll(".mode").forEach(b=>b.onclick=()=>start(b.dataset.m));
+}
+
+function start(k){
+  const m = MODES.find(x=>x.k===k);
+  let qs = shuffle(POOL.filter(m.f));
+  if(N && k!=="miss") qs = qs.slice(0,N);
+  S = {k,qs,i:0,ok:0,log:[]};
+  show();
+}
+
+function show(){
+  const q = S.qs[S.i];
+  const pct = S.i/S.qs.length*100;
+  const qtext = esc(q.q).replace(/＿＿/g,'<span class="blank">&nbsp;</span>');
+  app.innerHTML = `
+   <div class="top"><button class="back" id="bk">‹ やめる</button>
+     <div class="prog"><i style="width:${pct}%"></i></div>
+     <span class="cnt">${S.i+1}/${S.qs.length}</span></div>
+   <div class="card">
+     <span class="tag">${esc(q.sec)}${q.type==="tf"?"・○×":""}</span> <span class="pg">📖 p.${esc(q.pg)}${q.pen?"　✏️ペン":""}</span>
+     ${q.type==="sym"?`<div class="sym">${esc(q.sym)}</div>`:""}
+     <p class="q">${qtext}</p>
+     <div class="${q.type==="tf"?"tf":""}" id="chs">
+       ${q.ch.map((c,j)=>`<button class="ch" data-j="${j}">${esc(c)}</button>`).join("")}
+     </div>
+     <button class="ch idk" data-j="-1">🤔 わからない</button>
+     <div id="fb"></div>
+   </div>`;
+  document.getElementById("bk").onclick=home;
+  app.querySelectorAll(".ch").forEach(b=>b.onclick=()=>answer(b));
+}
+
+function answer(btn){
+  const q = S.qs[S.i];
+  const idk = btn.dataset.j==="-1";
+  const v = idk ? "わからない" : q.ch[+btn.dataset.j];
+  const right = !idk && v===q.a;
+  app.querySelectorAll(".ch").forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.j==="-1"){ if(idk) b.classList.add("picked"); return; }
+    const c=q.ch[+b.dataset.j];
+    if(c===q.a) b.classList.add("ok"); else if(b===btn) b.classList.add("ng");
+  });
+  if(idk) S.idk=(S.idk||0)+1;
+  let miss = store.get("miss",[]);
+  if(right){S.ok++; miss=miss.filter(x=>x!==q.id);} else if(!miss.includes(q.id)) miss.push(q.id);
+  store.set("miss",miss);
+  S.log.push({q,v,right});
+  const last = S.i===S.qs.length-1;
+  document.getElementById("fb").innerHTML = `
+    <div class="fb ${right?"ok":idk?"idk":"ng"}"><b>${right?"正解！":idk?"正解は「"+esc(q.a)+"」。覚えておこう！":"ざんねん… 正解は「"+esc(q.a)+"」"}</b>
+    ${q.e?`<p>${esc(q.e)}</p>`:""}</div>
+    <button class="next" id="nx">${last?"結果を見る":"次へ"}</button>
+    ${QDIA[q.id]?`<div class="dgw"><div class="refh">✏️ 図で見る</div>${DIA[QDIA[q.id]]}</div>`:""}
+    <div class="ref"><div class="refh">📖 教科書 p.${esc(q.pg)}</div><div class="muted" style="margin:-2px 0 6px">画像をタップで拡大</div>${refOf(q).map(k=>`<div class="zw"><img src="img/${k}.jpg" alt="教科書 p.${esc(q.pg)} の該当部分" loading="lazy"></div>`).join("")}
+    <button class="ask" id="ask">💬 Claudeに聞く（コピーしてチャットに貼る）</button><div id="askmsg" class="muted"></div></div>`;
+  document.querySelectorAll(".zw").forEach(z=>z.onclick=()=>z.classList.toggle("big"));
+  document.getElementById("ask").onclick=()=>{
+    const t=`機械製図アプリの問題でわからないところ\n問題：${q.sym?q.sym+" ":""}${q.q.replace(/＿＿/g,"（　）")}\n選択肢：${q.ch.join(" / ")}\n正解：${q.a}\n自分の答え：${v}\n教科書：p.${q.pg}\n`;
+    const m=document.getElementById("askmsg");
+    const fallback=()=>{m.innerHTML='コピーできなかったので、下を長押ししてコピーしてください：<textarea readonly style="width:100%;height:110px;margin-top:6px">'+esc(t)+'</textarea>';};
+    try{navigator.clipboard.writeText(t).then(()=>{m.textContent="コピーしました。チャットに貼って、聞きたいことを足して送ってください。"},fallback)}catch(e){fallback()}
+  };
+  document.getElementById("nx").onclick=()=>{ if(last) result(); else {S.i++;show();} };
+  document.getElementById("nx").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function result(){
+  const n=S.qs.length, p=Math.round(S.ok/n*100);
+  const best=store.get("best",{});
+  if(S.k!=="miss" && (best[S.k]==null||p>best[S.k])){best[S.k]=p;store.set("best",best);}
+  const wrong=S.log.filter(x=>!x.right);
+  const msg = p===100?"完璧！":p>=80?"いい感じ！":p>=60?"もう一息！":"復習しよう";
+  app.innerHTML = `
+   <div class="card score"><div class="muted">${msg}</div>
+     <div class="big">${S.ok}<span class="of" style="font-size:22px"> / ${n}</span></div>
+     <div class="muted">正答率 ${p}%${S.idk?`（わからない ${S.idk}問）`:""}</div></div>
+   ${wrong.length?`<button class="next" id="rw">間違えた${wrong.length}問をもう一回</button>`:""}
+   <button class="next ghost" id="hm">メニューへ</button>
+   ${wrong.length?`<div class="card" style="margin-top:14px"><b style="font-size:14px">見直し</b>
+     ${wrong.map(x=>`<div class="rv">${x.q.sym?`<b>${esc(x.q.sym)}</b> `:""}${esc(x.q.q).replace(/＿＿/g,"（　）")}
+       <div>あなた：${esc(x.v)}　<span class="a">正解：${esc(x.q.a)}</span>　<span class="muted">p.${esc(x.q.pg)}</span></div></div>`).join("")}</div>`:""}`;
+  document.getElementById("hm").onclick=home;
+  const rw=document.getElementById("rw");
+  if(rw) rw.onclick=()=>{S={k:"retry",qs:shuffle(wrong.map(x=>({...x.q,ch:x.q.type==="tf"?x.q.ch:shuffle(x.q.ch)}))),i:0,ok:0,log:[]};show();};
+  window.scrollTo(0,0);
+}
+home();
+</script>
+</body>
+</html>
